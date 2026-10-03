@@ -311,7 +311,7 @@ struct ClaudeToMarkoVoice: App {
         return ""
     }()
     var body: some Scene {
-        WindowGroup(Self.replying ? "Answer Claude" : "Claude to Marko voice") {
+        WindowGroup(Self.replying ? "Answer Claude (Mantra)" : "Claude to Marko voice (Mantra)") {
             if Self.replying { Reply(said: Self.said) } else { Settings(m: m) }
         }
         .windowResizability(.contentSize)

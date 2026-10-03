@@ -37,7 +37,7 @@ final class Box: NSPanel, NSTextViewDelegate {
         let f = screen.visibleFrame
         super.init(contentRect: NSRect(x: f.midX - W / 2, y: f.midY - H / 2, width: W, height: H),
                    styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        title = "Answer Claude"
+        title = "Answer Claude (Mantra)"
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)) + 1)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         backgroundColor = NSColor(calibratedRed: 0.043, green: 0.051, blue: 0.063, alpha: 1)
@@ -52,7 +52,7 @@ final class Box: NSPanel, NSTextViewDelegate {
         text.frame = scroll.bounds
         text.font = NSFont(name: "Helvetica Neue", size: 21); text.textColor = SAND
         text.backgroundColor = NSColor(white: 0.12, alpha: 1); text.insertionPointColor = SAND
-        text.isRichText = false; text.delegate = self
+        text.isRichText = false; text.delegate = self; text.allowsUndo = true
         text.textContainerInset = NSSize(width: 8, height: 8)
         text.autoresizingMask = [.width]
         scroll.documentView = text
@@ -90,6 +90,20 @@ final class Box: NSPanel, NSTextViewDelegate {
 
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
+// COPY AND PASTE (Marko: "please enable copy paste in text box it should work like any text box on mac"): the keys
+// ⌘X ⌘C ⌘V ⌘A ⌘Z live in the Edit menu; an app without one has none of them. The menu is never seen (no menu bar for
+// an accessory app), only its keys.
+let menu = NSMenu()
+let edit = NSMenuItem(); menu.addItem(edit)
+let em = NSMenu(title: "Edit"); edit.submenu = em
+em.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+let redo = em.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z"); redo.keyEquivalentModifierMask = [.command, .shift]
+em.addItem(.separator())
+em.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+em.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+em.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+em.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+app.mainMenu = menu
 let box = Box()
 box.makeKeyAndOrderFront(nil)
 box.makeFirstResponder(box.text)
