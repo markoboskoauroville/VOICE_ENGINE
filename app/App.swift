@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 3
+let VERSION = 4
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -222,11 +222,75 @@ struct Settings: View {
     }
 }
 
+// THE ANSWER (v4). Marko, 3.10.2026: "when I click on it instead of closing it ... open the text input window when
+// I'm going to answer you, and then when I send the answer you're receiving it right here in this chat ... if I send
+// an empty message it means I will just close the thing." `--reply` opens only this box, over everything, with the
+// sentence he answers above it. Enter sends: the words go to ~/.voice/replies/<time>.txt, which the Claude Code
+// session watches and reads as his message; empty, nothing is sent. Either way the subtitle closes (and its wave
+// files go, POST /speak/close) and the box quits.
+let REPLIES = NSHomeDirectory() + "/.voice/replies"
+
+func closeSubtitle() {
+    var r = URLRequest(url: URL(string: "http://127.0.0.1:8837/speak/close")!)
+    r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    let done = DispatchSemaphore(value: 0)
+    URLSession.shared.dataTask(with: r) { _, _, _ in done.signal() }.resume()
+    _ = done.wait(timeout: .now() + 2)
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/hs")
+    p.arguments = ["-t", "3", "-c", "if VOICEBUBBLE then VOICEBUBBLE.hide() end"]
+    try? p.run(); p.waitUntilExit()
+}
+
+struct Reply: View {
+    let said: String
+    @State var text = ""
+    @FocusState var focus: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !said.isEmpty {
+                Text(said).font(.custom("Helvetica Neue", size: 17)).foregroundColor(AMBER).fixedSize(horizontal: false, vertical: true)
+            }
+            TextField("Your answer to Claude (Enter sends; empty closes)", text: $text, axis: .vertical)
+                .font(.custom("Helvetica Neue", size: 20)).textFieldStyle(.plain).lineLimit(1...8)
+                .padding(12).background(Color(white: 0.12)).focused($focus)
+                .onSubmit { send() }
+            HStack {
+                Text("ENTER sends · ESC closes").font(.system(size: 11, design: .monospaced)).foregroundColor(GREY)
+                Spacer()
+                Text("SEND").font(.system(size: 14, weight: .bold, design: .monospaced)).foregroundColor(GREEN).onTapGesture { send() }
+            }
+        }
+        .padding(20).frame(width: 760).background(INK).preferredColorScheme(.dark)
+        .onAppear { focus = true; NSApp.activate(ignoringOtherApps: true) }
+        .onExitCommand { text = ""; send() }
+    }
+
+    func send() {
+        let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !words.isEmpty {
+            try? FileManager.default.createDirectory(atPath: REPLIES, withIntermediateDirectories: true)
+            let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss-SSS"
+            try? (words + "\n").write(toFile: REPLIES + "/" + f.string(from: Date()) + ".txt", atomically: true, encoding: .utf8)
+        }
+        closeSubtitle()
+        NSApp.terminate(nil)
+    }
+}
+
 @main
 struct ClaudeToMarkoVoice: App {
     @StateObject var m = Model()
+    static let replying = CommandLine.arguments.contains("--reply")
+    static let said: String = {
+        let a = CommandLine.arguments
+        if let i = a.firstIndex(of: "--said"), i + 1 < a.count { return a[i + 1] }
+        return ""
+    }()
     var body: some Scene {
-        WindowGroup("Claude to Marko voice") { Settings(m: m) }
-            .windowResizability(.contentSize)
+        WindowGroup(Self.replying ? "Answer Claude" : "Claude to Marko voice") {
+            if Self.replying { Reply(said: Self.said) } else { Settings(m: m) }
+        }
+        .windowResizability(.contentSize)
     }
 }
