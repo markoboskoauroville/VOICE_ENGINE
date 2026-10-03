@@ -1,6 +1,6 @@
 # TAKEOVER
 
-**State (3.10.2026):** v2. The window writes `~/.config/subtitle.json`
+**State (3.10.2026):** v3 (linger 0 = forever, the default: the subtitle stays until a click on its text). The window writes `~/.config/subtitle.json`
 (`size colour bold word wordbg offset band grey position linger`); the subtitle in MANTRA_STAR `apps/voice.lua`
 reads it at each reading and at each preview. The word timings come from MANTRA_VOICE `GET /speaking`
 (`pos`, seconds into the sentence; `words`, `[{s, e, t, d}]`).

@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 2
+let VERSION = 3
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -18,7 +18,7 @@ struct SubtitleSettings: Codable, Equatable {
     var bold: Bool = false
     var word: String = "#FF3B30"    // v2: the word being said (MA Reader web's word highlight)
     var wordbg: String = ""         // v2: a block behind that word, "" for none
-    var linger: Double = 30         // v2: seconds the last sentence stays after the voice ends
+    var linger: Double = 0          // v2: seconds the last sentence stays after the voice ends; 0 = until clicked (v3)
     var offset: Double = 0          // v2: ms, the highlight earlier (−) or later (+) than the voice
 
     init() {}
@@ -134,6 +134,9 @@ struct Swatches: View {
     }
 }
 
+// 0 is forever: the subtitle stays until a click on its text (Marko, 3.10.2026: "for now it's forever")
+func lingerName(_ v: Double) -> String { v <= 0 ? "FOREVER" : v >= 60 ? "\(Int(v / 60)) MIN" : "\(Int(v)) S" }
+
 struct BigKey: View {
     let text: String; let action: () -> Void
     var body: some View {
@@ -184,10 +187,10 @@ struct Settings: View {
             Row(name: "THE WORD EARLIER / LATER", value: String(format: "%+.0f ms", m.s.offset)) {
                 Slider(value: $m.s.offset, in: -400...400, step: 10)
             }
-            Row(name: "STAYS AFTER THE VOICE", value: m.s.linger >= 600 ? "10 MIN" : String(format: "%.0f s", m.s.linger)) {
+            Row(name: "STAYS AFTER THE VOICE", value: lingerName(m.s.linger)) {
                 HStack {
-                    ForEach([5.0, 30.0, 120.0, 600.0], id: \.self) { v in
-                        Word(text: v >= 600 ? "10 MIN" : v >= 60 ? "\(Int(v / 60)) MIN" : "\(Int(v)) S", on: m.s.linger == v) { m.s.linger = v }
+                    ForEach([0.0, 30.0, 120.0, 600.0], id: \.self) { v in
+                        Word(text: lingerName(v), on: m.s.linger == v) { m.s.linger = v }
                     }
                 }
             }
