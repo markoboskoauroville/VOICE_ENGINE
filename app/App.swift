@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 4
+let VERSION = 5
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -242,6 +242,28 @@ func closeSubtitle() {
     try? p.run(); p.waitUntilExit()
 }
 
+// v5: the box opened UNDER the subtitle (an overlay-level window across the middle of the screen): his clicks
+// launched it nine times and nothing was seen. Now its window is raised above every overlay, sits in the upper
+// third of the screen with the pointer, and takes the keyboard.
+struct OnTop: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let v = NSView()
+        DispatchQueue.main.async {
+            guard let w = v.window else { return }
+            w.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)) + 1)
+            w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
+            if let f = screen?.visibleFrame {
+                w.setFrameOrigin(NSPoint(x: f.midX - w.frame.width / 2, y: f.maxY - f.height / 3 - w.frame.height / 2))
+            }
+            w.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        return v
+    }
+    func updateNSView(_ v: NSView, context: Context) {}
+}
+
 struct Reply: View {
     let said: String
     @State var text = ""
@@ -262,6 +284,7 @@ struct Reply: View {
             }
         }
         .padding(20).frame(width: 760).background(INK).preferredColorScheme(.dark)
+        .background(OnTop())
         .onAppear { focus = true; NSApp.activate(ignoringOtherApps: true) }
         .onExitCommand { text = ""; send() }
     }
