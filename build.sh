@@ -1,0 +1,26 @@
+#!/bin/sh
+# build.sh: Claude to Marko Voice.app, swiftc straight, no Xcode, signed "Mantra Apps" (MANTRA_MANIFEST mac-app-signing.md).
+set -e
+cd "$(dirname "$0")"
+V=$(sed -n 's/^let VERSION = \([0-9]*\)/\1/p' app/App.swift)
+APP="build/Claude to Marko Voice.app"
+rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+swiftc -O -swift-version 5 -parse-as-library -o "$APP/Contents/MacOS/ClaudeToMarkoVoice" app/*.swift 2>&1 | grep -v "warning:" || true
+[ -x "$APP/Contents/MacOS/ClaudeToMarkoVoice" ] || { echo "the app did not build"; exit 1; }
+cat > "$APP/Contents/Info.plist" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleName</key><string>Claude to Marko Voice</string>
+<key>CFBundleDisplayName</key><string>Claude to Marko voice</string>
+<key>CFBundleIdentifier</key><string>community.auroville.claudetomarkovoice</string>
+<key>CFBundleExecutable</key><string>ClaudeToMarkoVoice</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>$V</string>
+<key>CFBundleVersion</key><string>$V</string>
+<key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>NSHighResolutionCapable</key><true/>
+</dict></plist>
+PL
+codesign --force -s "Mantra Apps" "$APP"
+echo "built $APP (v$V)"
