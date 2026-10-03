@@ -23,4 +23,19 @@ cat > "$APP/Contents/Info.plist" <<PL
 </dict></plist>
 PL
 codesign --force -s "Mantra Apps" "$APP"
-echo "built $APP (v$V)"
+# the answer box, its own small AppKit app (the SwiftUI scene never opened a window when launched by a click)
+A="build/Answer Claude.app"; rm -rf "$A"; mkdir -p "$A/Contents/MacOS"
+swiftc -O reply/main.swift -o "$A/Contents/MacOS/AnswerClaude" 2>&1 | grep -v "warning:" || true
+cat > "$A/Contents/Info.plist" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleName</key><string>Answer Claude</string>
+<key>CFBundleIdentifier</key><string>community.auroville.answerclaude</string>
+<key>CFBundleExecutable</key><string>AnswerClaude</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>LSUIElement</key><true/>
+</dict></plist>
+PL
+codesign --force -s "Mantra Apps" "$A"
+echo "built $APP (v$V) and $A"
