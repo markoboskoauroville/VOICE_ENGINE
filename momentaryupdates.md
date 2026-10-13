@@ -21,3 +21,8 @@ Marko to try: SPEECHIFY, HEAR IT, then back.
 Asked which: "Big screen (2560 wide)", the main display with the menu bar. Status: built v7 13.10.2026: BAND ON THE
 BIG SCREEN ON / OFF in the window (subtitle.json `bandmain`), set OFF; MANTRA_STAR voice.lua draws no band on the
 main screen then (Hammerspoon restarted, pid 14192 → 18649). Marko to look: the overlay does not show in screencapture.
+
+## 13.10.2026: the subtitle itself into Swift (v8)
+> "We are quitting the Lua, no more Lua, only Swift" (Marko, 13.10.2026)
+
+The speaking subtitle (MANTRA_STAR apps/voice.lua, VOICEBUBBLE) becomes the engine inside this app. **Status:** in progress.
