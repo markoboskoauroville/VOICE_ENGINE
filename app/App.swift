@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 5
+let VERSION = 6
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -145,10 +145,90 @@ struct BigKey: View {
     }
 }
 
+// THE ENGINE (v6). Marko, 13.10.2026: "there must also be options for which engine to use. Now we can add the original
+// Speechify engine to talk with me". The choice lives in MANTRA_VOICE (~/.voice/voice.json) and is changed only
+// through its API (API.md): GET /voices for the list and the current one, POST /current to change it. Beatrice is
+// the Speechify voice (paid); CLONE is one of the cloned voices. The app never starts the voice: off, it says so.
+let VOICE_API = "http://127.0.0.1:8837"
+
+final class Engine: ObservableObject {
+    @Published var up = false
+    @Published var engine = ""          // "clone" or "beatrice"
+    @Published var voice = ""
+    @Published var voices: [String] = []
+    @Published var busy = false
+    private var timer: Timer?
+    init() {
+        refresh()
+        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in self?.refresh() }
+    }
+    func refresh() {
+        var r = URLRequest(url: URL(string: VOICE_API + "/voices")!); r.timeoutInterval = 2
+        URLSession.shared.dataTask(with: r) { d, _, _ in
+            let j = d.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+            DispatchQueue.main.async {
+                guard let j = j else { self.up = false; return }
+                self.up = true
+                let cur = j["current"] as? [String: Any] ?? [:]
+                self.engine = cur["engine"] as? String ?? ""
+                self.voice = cur["voice"] as? String ?? ""
+                self.voices = (j["voices"] as? [[String: Any]] ?? []).compactMap { $0["name"] as? String }
+            }
+        }.resume()
+    }
+    func post(_ path: String, _ body: [String: Any], then: (() -> Void)? = nil) {
+        var r = URLRequest(url: URL(string: VOICE_API + path)!)
+        r.httpMethod = "POST"; r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        busy = true
+        URLSession.shared.dataTask(with: r) { _, _, _ in
+            DispatchQueue.main.async { self.busy = false; self.refresh(); then?() }
+        }.resume()
+    }
+    func use(engine e: String, voice v: String? = nil) {
+        var b: [String: Any] = ["engine": e]; if let v = v { b["voice"] = v }
+        engine = e; if let v = v { voice = v }            // the window answers at once; refresh() confirms
+        post("/current", b)
+    }
+    func hear() { post("/speak", ["text": "Marko, this is how I sound now."]) }
+}
+
+struct EngineRow: View {
+    @ObservedObject var e: Engine
+    var body: some View {
+        Row(name: "THE VOICE ENGINE", value: !e.up ? "VOICE IS OFF" : e.engine == "beatrice" ? "SPEECHIFY (BEATRICE)" : "CLONE · " + e.voice.uppercased()) {
+            if !e.up {
+                Text("The voice server at :8837 is not running. The Voices row in the star starts it.")
+                    .font(.system(size: 11, design: .monospaced)).foregroundColor(GREY)
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Word(text: "CLONE", on: e.engine == "clone") { e.use(engine: "clone", voice: e.voice.isEmpty ? e.voices.first : e.voice) }
+                        Word(text: "SPEECHIFY", on: e.engine == "beatrice") { e.use(engine: "beatrice") }
+                        Spacer()
+                        Word(text: e.busy ? "…" : "HEAR IT", on: false) { e.hear() }
+                    }
+                    if e.engine == "clone" {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 0) {
+                                ForEach(e.voices, id: \.self) { v in
+                                    Word(text: v.uppercased(), on: e.voice == v) { e.use(engine: "clone", voice: v) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct Settings: View {
     @ObservedObject var m: Model
+    @StateObject var engine = Engine()
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            EngineRow(e: engine)
             // the subtitle as it will look, small
             ZStack {
                 Rectangle().fill(Color(white: m.s.grey / 100).opacity(m.s.band / 100))
