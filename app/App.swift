@@ -18,7 +18,7 @@ struct SubtitleSettings: Codable, Equatable {
     var bold: Bool = false
     var word: String = "#FF3B30"    // v2: the word being said (MA Reader web's word highlight)
     var wordbg: String = ""         // v2: a block behind that word, "" for none
-    var linger: Double = 0          // v2: seconds the last sentence stays after the voice ends; 0 = until clicked (v3)
+    var linger: Double = 2          // v2: seconds the last sentence stays after the voice ends; 0 = until clicked (v3); 2 s by default (Marko, 13.10.2026)
     var offset: Double = 0          // v2: ms, the highlight earlier (−) or later (+) than the voice
 
     init() {}
@@ -189,7 +189,7 @@ struct Settings: View {
             }
             Row(name: "STAYS AFTER THE VOICE", value: lingerName(m.s.linger)) {
                 HStack {
-                    ForEach([0.0, 30.0, 120.0, 600.0], id: \.self) { v in
+                    ForEach([2.0, 30.0, 120.0, 600.0, 0.0], id: \.self) { v in
                         Word(text: lingerName(v), on: m.s.linger == v) { m.s.linger = v }
                     }
                 }
