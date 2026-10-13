@@ -14,3 +14,8 @@ SPEECHIFY (Beatrice), under CLONE every cloned voice from GET /voices, HEAR IT s
 A tap is POST /current (API.md); the row reads the live choice every 3 s, and says "VOICE IS OFF" when :8837 does
 not answer (it never starts the voice). Checked: the row shows CLONE · GWYNETH and the 7 voices, as /voices says.
 Marko to try: SPEECHIFY, HEAR IT, then back.
+
+## 13.10.2026: no band behind the subtitle on the first screen
+> "please remove background for subtitle from the first screen"
+
+Asked which: "Big screen (2560 wide)", the main display with the menu bar. Status: in progress.
