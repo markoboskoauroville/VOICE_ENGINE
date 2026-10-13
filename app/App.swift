@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 6
+let VERSION = 7
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -20,6 +20,7 @@ struct SubtitleSettings: Codable, Equatable {
     var wordbg: String = ""         // v2: a block behind that word, "" for none
     var linger: Double = 2          // v2: seconds the last sentence stays after the voice ends; 0 = until clicked (v3); 2 s by default (Marko, 13.10.2026)
     var offset: Double = 0          // v2: ms, the highlight earlier (−) or later (+) than the voice
+    var bandmain: Bool = true       // v7: the band on the main (big) screen; off = letters only there (Marko, 13.10.2026)
 
     init() {}
     // a file from an older version lacks the new keys: each one missing takes its default
@@ -36,6 +37,7 @@ struct SubtitleSettings: Codable, Equatable {
         wordbg = (try? c.decode(String.self, forKey: .wordbg)) ?? z.wordbg
         linger = (try? c.decode(Double.self, forKey: .linger)) ?? z.linger
         offset = (try? c.decode(Double.self, forKey: .offset)) ?? z.offset
+        bandmain = (try? c.decode(Bool.self, forKey: .bandmain)) ?? z.bandmain
     }
 
     static let file = URL(fileURLWithPath: NSHomeDirectory() + "/.config/subtitle.json")
@@ -276,6 +278,12 @@ struct Settings: View {
             }
             Row(name: "BAND", value: String(format: "%.0f %% seen", m.s.band)) {
                 Slider(value: $m.s.band, in: 0...100, step: 1)
+            }
+            Row(name: "BAND ON THE BIG SCREEN", value: m.s.bandmain ? "ON" : "OFF, LETTERS ONLY") {
+                HStack {
+                    Word(text: "ON", on: m.s.bandmain) { m.s.bandmain = true }
+                    Word(text: "OFF", on: !m.s.bandmain) { m.s.bandmain = false }
+                }
             }
             Row(name: "BAND GREY", value: String(format: "%.0f %%", m.s.grey)) {
                 Slider(value: $m.s.grey, in: 0...60, step: 1)

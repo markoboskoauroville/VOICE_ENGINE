@@ -18,4 +18,6 @@ Marko to try: SPEECHIFY, HEAR IT, then back.
 ## 13.10.2026: no band behind the subtitle on the first screen
 > "please remove background for subtitle from the first screen"
 
-Asked which: "Big screen (2560 wide)", the main display with the menu bar. Status: in progress.
+Asked which: "Big screen (2560 wide)", the main display with the menu bar. Status: built v7 13.10.2026: BAND ON THE
+BIG SCREEN ON / OFF in the window (subtitle.json `bandmain`), set OFF; MANTRA_STAR voice.lua draws no band on the
+main screen then (Hammerspoon restarted, pid 14192 → 18649). Marko to look: the overlay does not show in screencapture.
