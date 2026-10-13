@@ -5,3 +5,5 @@
    is the last started at clock + 50 ms; the last word lets go 0.12 s after its end. Copied, not reinvented.
 2. **Character offsets vs bytes**: the server's word offsets count characters; `hs.styledtext` counts bytes like
    `string.sub`. `utf8.offset` converts; without it a "−" or an accented letter shifts every later highlight.
+
+- (13.10.2026, v8) A SwiftUI App scene cannot run with no window: the engine needs an AppKit life (NSApplication + delegate, accessory policy) and the settings window made in NSHostingController at launch and at reopen.

@@ -2,7 +2,7 @@
 
 The settings of the **speaking subtitle**: while the computer speaks to Marko (MANTRA_VOICE, `POST /speak`),
 every sentence is written across every screen as a film subtitle, the word being said lit in another colour.
-The subtitle is drawn by the star (MANTRA_STAR `apps/voice.lua`, `VOICEBUBBLE`); this Swift window sets how it looks.
+**Since v8 (13.10.2026) this app draws the subtitle itself** (`app/Subtitle.swift`, ported from MANTRA_STAR `apps/voice.lua` VOICEBUBBLE): one band per screen while the voice reads, the word being said lit, − + and PREVIOUS NEXT REPLAY CLOSE, the linger, a click on the text opens Answer Claude. It runs as the subtitle engine for as long as the app runs (no Dock icon); its window, opened at launch and at every reopen, sets how it looks. It learns that a reading began by asking `GET :8837/speaking` once a second (five times while it shows); it never starts the voice. `--test-subtitle "text"` shows a subtitle for 8 s.
 
 - **Letters**: size as a share of the screen's height (big − and +, and a slider), colour, bold
 - **The word being said**: its colour (red by default, orange letters turning red) and an optional block behind it;
@@ -11,7 +11,7 @@ The subtitle is drawn by the star (MANTRA_STAR `apps/voice.lua`, `VOICEBUBBLE`);
 - **Stays after the voice**: how long the last sentence remains, so PREVIOUS still works when he comes back
 
 Every change is written to `~/.config/subtitle.json` and shown on the screens for four seconds
-(`hs -c VOICEBUBBLE.test`). The − and + on the subtitle write the same file; this window follows it.
+(the engine's own preview). The − and + on the subtitle write the same file; this window follows it.
 
 Build: `./build.sh` (swiftc, no Xcode, signed "Mantra Apps"). Opened from the star: Claude › Claude to Marko voice.
 

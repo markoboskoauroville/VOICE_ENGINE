@@ -25,4 +25,8 @@ main screen then (Hammerspoon restarted, pid 14192 → 18649). Marko to look: th
 ## 13.10.2026: the subtitle itself into Swift (v8)
 > "We are quitting the Lua, no more Lua, only Swift" (Marko, 13.10.2026)
 
-The speaking subtitle (MANTRA_STAR apps/voice.lua, VOICEBUBBLE) becomes the engine inside this app. **Status:** in progress.
+The speaking subtitle (MANTRA_STAR apps/voice.lua, VOICEBUBBLE) becomes the engine inside this app. **Status:** built v8
+13.10.2026 (app/Subtitle.swift; AppKit life, the window on demand, no Dock icon). Checked by screenshot with
+--test-subtitle: the MacBook's band with − + and PREVIOUS NEXT REPLAY CLOSE, the big screen letters only (bandmain off);
+the settings window reopens. Not checked: a real reading with the word highlight (the voice server was down).
+voice.lua steps aside while this app runs (MANTRA_STAR 3310386, at the next Hammerspoon restart). Marko to try.

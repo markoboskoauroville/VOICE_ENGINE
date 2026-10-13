@@ -1,13 +1,13 @@
-// CLAUDE TO MARKO VOICE: the settings of the speaking subtitle.
+// CLAUDE TO MARKO VOICE: the speaking subtitle and its settings.
 // Marko, 3.10.2026: "In the star menu you can call it Claude to Marko voice, and then I can adjust parameters of
 // this subtitle display"; "any settings are now Swift applications, and this is the rule."
-// The subtitle itself is drawn by the star (MANTRA_STAR apps/voice.lua, VOICEBUBBLE) on every screen while the voice
-// speaks. This window only writes ~/.config/subtitle.json, which the subtitle reads at each sentence, and shows a
-// preview on the screens after every change (hs -c VOICEBUBBLE.test).
+// v8 (13.10.2026, "no more Lua, only Swift"): the subtitle itself is drawn by this app (Subtitle.swift), no longer by
+// the star's voice.lua. The app is the engine for as long as it runs; this window, opened on demand (at launch and
+// at every reopen), writes ~/.config/subtitle.json and shows a preview on the screens after every change.
 import SwiftUI
 import AppKit
 
-let VERSION = 7
+let VERSION = 8
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -89,11 +89,7 @@ final class Model: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: w)
     }
     static func preview() {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/hs")
-        p.arguments = ["-t", "3", "-c", "if VOICEBUBBLE and VOICEBUBBLE.test then VOICEBUBBLE.test('Marko, this is how I will be written while I speak to you.', 4) end"]
-        p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
-        try? p.run()
+        SubtitleEngine.shared.test("Marko, this is how I will be written while I speak to you.", 4)
     }
 }
 
@@ -324,10 +320,7 @@ func closeSubtitle() {
     let done = DispatchSemaphore(value: 0)
     URLSession.shared.dataTask(with: r) { _, _, _ in done.signal() }.resume()
     _ = done.wait(timeout: .now() + 2)
-    let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/hs")
-    p.arguments = ["-t", "3", "-c", "if VOICEBUBBLE then VOICEBUBBLE.hide() end"]
-    try? p.run(); p.waitUntilExit()
+    DistributedNotificationCenter.default().postNotificationName(Notification.Name(HIDE_NOTE), object: nil, userInfo: nil, deliverImmediately: true)
 }
 
 // v5: the box opened UNDER the subtitle (an overlay-level window across the middle of the screen): his clicks
@@ -389,19 +382,47 @@ struct Reply: View {
     }
 }
 
-@main
-struct ClaudeToMarkoVoice: App {
-    @StateObject var m = Model()
-    static let replying = CommandLine.arguments.contains("--reply")
-    static let said: String = {
+// v8: an AppKit life, so the engine runs with no window open. The settings window is made at launch and at every
+// reopen (the star's click, the Dock, Finder); closing it leaves the subtitle working; quitting the app ends it.
+// --reply keeps the old answer box of v4 (Answer Claude (Mantra).app is the one the subtitle opens).
+final class Delegate: NSObject, NSApplicationDelegate {
+    let replying = CommandLine.arguments.contains("--reply")
+    let said: String = {
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "--said"), i + 1 < a.count { return a[i + 1] }
         return ""
     }()
-    var body: some Scene {
-        WindowGroup(Self.replying ? "Answer Claude (Mantra)" : "Claude to Marko voice (Mantra)") {
-            if Self.replying { Reply(said: Self.said) } else { Settings(m: m) }
-        }
-        .windowResizability(.contentSize)
+    var model: Model?
+    var window: NSWindow?
+    func applicationDidFinishLaunching(_ n: Notification) {
+        if replying { open(NSHostingController(rootView: Reply(said: said)), "Answer Claude (Mantra)"); return }
+        SubtitleEngine.shared.start()
+        // `--test-subtitle "text"`: the subtitle shows that text for 8 s (a check without a reading)
+        let a = CommandLine.arguments
+        if let i = a.firstIndex(of: "--test-subtitle") { SubtitleEngine.shared.test(i + 1 < a.count ? a[i + 1] : "Marko, this is a test of the subtitle.", 8); return }
+        openSettings()
+    }
+    func applicationShouldHandleReopen(_ s: NSApplication, hasVisibleWindows: Bool) -> Bool { if !replying { openSettings() }; return true }
+    func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { replying }
+    func openSettings() {
+        if model == nil { model = Model() }
+        if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
+        open(NSHostingController(rootView: Settings(m: model!)), "Claude to Marko voice (Mantra)")
+    }
+    func open<V: View>(_ vc: NSHostingController<V>, _ title: String) {
+        let w = NSWindow(contentViewController: vc)
+        w.title = title; w.styleMask = [.titled, .closable, .miniaturizable]; w.isReleasedWhenClosed = false
+        w.center(); w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
+        window = w
+    }
+}
+
+@main
+struct Main {
+    static func main() {
+        let app = NSApplication.shared
+        let d = Delegate(); app.delegate = d
+        app.setActivationPolicy(.accessory)        // an engine: no Dock icon; the window comes and goes
+        app.run()
     }
 }
