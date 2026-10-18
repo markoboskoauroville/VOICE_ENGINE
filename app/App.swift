@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 8
+let VERSION = 9
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -400,6 +400,8 @@ final class Delegate: NSObject, NSApplicationDelegate {
         // `--test-subtitle "text"`: the subtitle shows that text for 8 s (a check without a reading)
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "--test-subtitle") { SubtitleEngine.shared.test(i + 1 < a.count ? a[i + 1] : "Marko, this is a test of the subtitle.", 8); return }
+        // v9 (18.10.2026): brought back by the star at login (--login), the subtitle runs and the window waits
+        if a.contains("--login") { return }
         openSettings()
     }
     func applicationShouldHandleReopen(_ s: NSApplication, hasVisibleWindows: Bool) -> Bool { if !replying { openSettings() }; return true }
