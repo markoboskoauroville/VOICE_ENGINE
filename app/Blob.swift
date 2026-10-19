@@ -9,9 +9,14 @@
 // this reading again from its first sentence (/speak/top), the blue button pauses and plays (/speak/pause).
 // It shows while the voice reads (the engine's GET /speaking) and goes when the reading ends. Dragged anywhere, its
 // place is kept (UserDefaults "blobOrigin") and it comes back there.
+//
+// v11 (19.10.2026). Marko: "it's just animation, it should react to the voice itself ... divided by bands ... FFT ... in
+// these vertical lines": the bars are the engine's GET /speak/bands, 11 bands of the sound reaching the speaker now
+// (low at the left, high at the right), asked 24 times a second, through Spectral Analyzer's spectrum meter. Then "please also add to the blob setup gear
+// icon": ⚙ opens this app's settings window.
 import AppKit
 
-let BLOB_W: CGFloat = 214, BLOB_H: CGFloat = 40
+let BLOB_W: CGFloat = 248, BLOB_H: CGFloat = 40
 let BLUE = NSColor(calibratedRed: 0x3D / 255, green: 0x7B / 255, blue: 0xF7 / 255, alpha: 1)
 
 final class BlobButton: NSView {
@@ -38,16 +43,37 @@ final class BlobButton: NSView {
     }
 }
 
-// The dotted wave: short white bars, round-ended, rising and falling while she speaks; flat dots while paused.
+// The wave: short white bars, round-ended, each one band of her sound; flat dots while paused or silent.
+// v11: SPECTRAL_ANALYZER's SPECTRUM meter, made small (Marko: "I have a professional meter ... take the code from that
+// audio tools ... find a suitable meter from there and just attach it to this blob"). Its ballistics, as in
+// Analyzer.spectrumAndPictures: FabFilter's 4.5 dB/oct tilt about 1 kHz, an attack at once, a release of 30 dB/s
+// (SPEED MEDIUM); no peak line (Marko: "looking good, but don't hold the peaks, please"). RANGE is 54 dB below a top
+// of -6 dB, the height of a voice in a bar of 28 points.
+struct Bands: Decodable { var on: Bool; var bands: [Double]; var db: [Double]? }
 final class WaveView: NSView {
+    static let TILT = 4.5, RELEASE = 30.0, TOP = -6.0, RANGE = 54.0
+    static let centres: [Double] = (0..<11).map { 80 * pow(11000.0 / 80, (Double($0) + 0.5) / 11) }
     var moving = false
-    var phase = 0.0
+    var spec = [Double](repeating: -140, count: 11)
+    var last = CFAbsoluteTimeGetCurrent()
+    var levels: [Double] { spec.map { WaveView.height($0) } }
+    static func height(_ db: Double) -> Double { min(1, max(0, (db - (TOP - RANGE)) / RANGE)) }
+    func take(_ b: Bands?) {
+        let t = CFAbsoluteTimeGetCurrent(), dt = min(0.2, t - last); last = t
+        let db = b?.db ?? b?.bands.map { $0 > 0 ? $0 * 50 - 62 : -140 } ?? []
+        for c in 0..<spec.count {
+            var m = moving && c < db.count ? db[c] : -140
+            if m > -140 { m += WaveView.TILT * log2(WaveView.centres[c] / 1000) }
+            spec[c] = m > spec[c] ? m : max(m, spec[c] - WaveView.RELEASE * dt)
+        }
+        needsDisplay = true
+    }
     override func draw(_ r: NSRect) {
-        let n = 11, gap: CGFloat = 4, w: CGFloat = 2.6
+        let n = levels.count, gap: CGFloat = 4, w: CGFloat = 2.6
         let x0 = (bounds.width - CGFloat(n) * w - CGFloat(n - 1) * gap) / 2
         NSColor(white: 1, alpha: 0.92).setFill()
         for i in 0..<n {
-            let a = moving ? (0.5 + 0.5 * sin(phase * 2.3 + Double(i) * 0.9)) * (0.6 + 0.4 * sin(phase * 1.3 + Double(i) * 1.7)) : 0
+            let a = WaveView.height(spec[i])
             let h = max(w, CGFloat(a) * (bounds.height - 12) + w)
             let rect = NSRect(x: x0 + CGFloat(i) * (w + gap), y: (bounds.height - h) / 2, width: w, height: h)
             NSBezierPath(roundedRect: rect, xRadius: w / 2, yRadius: w / 2).fill()
@@ -77,9 +103,10 @@ final class PillView: NSView {
 final class Blob {
     static let shared = Blob()
     var panel: NSPanel?
-    let wave = WaveView(frame: NSRect(x: 40, y: 0, width: 72, height: BLOB_H))
+    let wave = WaveView(frame: NSRect(x: 40, y: 0, width: 74, height: BLOB_H))
     var pauseKey: BlobButton!, ccKey: BlobButton!
     var timer: Timer?
+    var asking = false
     var paused = false
     var quiet = 0
 
@@ -95,12 +122,14 @@ final class Blob {
         let grey = NSColor(white: 0.36, alpha: 1), white = NSColor(white: 0.95, alpha: 1)
         pill.addSubview(BlobButton("xmark", NSRect(x: 4, y: 2, width: 36, height: 36), circle: grey, tint: white) { [weak self] in self?.cancel() })
         pill.addSubview(wave)
-        ccKey = BlobButton("captions.bubble.fill", NSRect(x: 112, y: 2, width: 32, height: 36), circle: nil, tint: white) { [weak self] in self?.toggleSubtitles() }
+        ccKey = BlobButton("captions.bubble.fill", NSRect(x: 114, y: 2, width: 32, height: 36), circle: nil, tint: white) { [weak self] in self?.toggleSubtitles() }
         pill.addSubview(ccKey)
-        pill.addSubview(BlobButton("arrow.counterclockwise", NSRect(x: 142, y: 2, width: 32, height: 36), circle: nil, tint: white) { [weak self] in self?.top() })
-        pauseKey = BlobButton("pause.fill", NSRect(x: 174, y: 2, width: 36, height: 36), circle: BLUE, tint: white) { [weak self] in self?.togglePause() }
+        pill.addSubview(BlobButton("gearshape.fill", NSRect(x: 146, y: 2, width: 32, height: 36), circle: nil, tint: white) {
+            (NSApp.delegate as? Delegate)?.openSettings() })
+        pill.addSubview(BlobButton("arrow.counterclockwise", NSRect(x: 176, y: 2, width: 32, height: 36), circle: nil, tint: white) { [weak self] in self?.top() })
+        pauseKey = BlobButton("pause.fill", NSRect(x: 208, y: 2, width: 36, height: 36), circle: BLUE, tint: white) { [weak self] in self?.togglePause() }
         pill.addSubview(pauseKey)
-        for v in pill.subviews { v.toolTip = ["xmark": "Cancel", "captions.bubble.fill": "Subtitles on / off",
+        for v in pill.subviews { v.toolTip = ["xmark": "Cancel", "captions.bubble.fill": "Subtitles on / off", "gearshape.fill": "Setup",
                                               "arrow.counterclockwise": "From the top", "pause.fill": "Pause / play"][(v as? BlobButton)?.symbol ?? ""] }
         p.contentView = pill
         p.setFrameOrigin(savedOrigin())
@@ -128,10 +157,19 @@ final class Blob {
         panel?.orderFrontRegardless()
         if timer == nil {
             timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 24, repeats: true) { [weak self] _ in
-                guard let self = self else { return }
-                self.wave.phase += 0.16; self.wave.needsDisplay = true
+                self?.askBands()
             }
         }
+    }
+    // GET /speak/bands, one question at a time: a late answer is skipped, never queued
+    func askBands() {
+        if asking { return }
+        asking = true
+        var r = URLRequest(url: URL(string: VOICE_URL + "/speak/bands")!); r.timeoutInterval = 0.5
+        URLSession.shared.dataTask(with: r) { [weak self] d, _, _ in
+            let b = d.flatMap { try? JSONDecoder().decode(Bands.self, from: $0) }
+            DispatchQueue.main.async { self?.asking = false; self?.wave.take(b) }
+        }.resume()
     }
     func hide() {
         timer?.invalidate(); timer = nil

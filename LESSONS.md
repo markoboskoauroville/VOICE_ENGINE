@@ -7,3 +7,10 @@
    `string.sub`. `utf8.offset` converts; without it a "−" or an accented letter shifts every later highlight.
 
 - (13.10.2026, v8) A SwiftUI App scene cannot run with no window: the engine needs an AppKit life (NSApplication + delegate, accessory policy) and the settings window made in NSHostingController at launch and at reopen.
+
+## The wave was a drawing, not a meter (19.10.2026)
+
+v10's bars were two sines, moving whatever she said, and Marko saw it at once. A meter must read the sound at the
+moment it is heard: the engine measures each buffer as it is handed to the speaker and keeps it with its DAC time,
+and the blob asks for the one sounding now. The ballistics were taken from SPECTRAL_ANALYZER rather than invented,
+and the held peaks taken out again because he did not want them on so small a thing.

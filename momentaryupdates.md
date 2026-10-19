@@ -43,10 +43,19 @@ voice.lua steps aside while this app runs (MANTRA_STAR 3310386, at the next Hamm
 
 > Please fix the Visualization on the reader. What's going on is that um It's just animation, it should react to the voice itself. So make uh Like divided by bands. Like visualization of the FFT, FFT analyzation. In these vertical lines.
 
-**Status:** in progress
+> please, I have a professional meter. We together we develop it, and you can just take the code from that audio tools. Spectral analyzes mantra same as flux and find a suitable meter from there and just attach it to this blob. Please
+
+**Status:** built 19.10.2026 (v11): the 11 bars are MANTRA_VOICE's GET /speak/bands through SPECTRAL_ANALYZER's
+SPECTRUM ballistics (4.5 dB/oct tilt, attack at once, 30 dB/s release), asked 24 times a second; seen moving in screenshots.
 
 ## 19.10.2026: a setup gear on the blob
 
 > please also add to the blob setup gear icon
 
-**Status:** in progress
+**Status:** built 19.10.2026 (v11): ⚙ between CC and ↻ opens the settings window; the blob is 248 wide.
+
+## 19.10.2026: no held peaks on the blob
+
+> looking good, but don't hold the peaks, please
+
+**Status:** built 19.10.2026 (v11): the peak dots are gone, the bars keep the analyzer's attack and release
