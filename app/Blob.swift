@@ -46,12 +46,12 @@ final class BlobButton: NSView {
 // The wave: short white bars, round-ended, each one band of her sound, rising from one line; dots on it while silent.
 // v11: SPECTRAL_ANALYZER's SPECTRUM meter, made small (Marko: "I have a professional meter ... take the code from that
 // audio tools ... find a suitable meter from there and just attach it to this blob"). Its ballistics, as in
-// Analyzer.spectrumAndPictures: FabFilter's 4.5 dB/oct tilt about 1 kHz, an attack at once, a release of 30 dB/s
-// (SPEED MEDIUM); no peak line (Marko: "looking good, but don't hold the peaks, please"). RANGE is 54 dB below a top
+// Analyzer.spectrumAndPictures: FabFilter's 4.5 dB/oct tilt about 1 kHz, an attack at once, a release of 120 dB/s
+// (SPEED VERY FAST: "make it fall off much faster"); no peak line (Marko: "looking good, but don't hold the peaks, please"). RANGE is 54 dB below a top
 // of -6 dB, the height of a voice in a bar of 28 points.
 struct Bands: Decodable { var on: Bool; var bands: [Double]; var db: [Double]? }
 final class WaveView: NSView {
-    static let TILT = 4.5, RELEASE = 30.0, TOP = -6.0, RANGE = 54.0
+    static let TILT = 4.5, RELEASE = 120.0, TOP = -6.0, RANGE = 54.0
     static let centres: [Double] = (0..<11).map { 80 * pow(11000.0 / 80, (Double($0) + 0.5) / 11) }
     var moving = false
     var spec = [Double](repeating: -140, count: 11)
