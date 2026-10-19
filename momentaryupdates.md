@@ -86,3 +86,8 @@ Status: built v13 19.10.2026: the v12 blob row is gone (the blob is always on). 
 OFF stops the reading now (/speak/stop) and writes `voice: false` to subtitle.json; the Stop hook subtitle_answer.py (hub)
 reads nothing then. Checked: the row in a screenshot (v13, old pid 10240 → 10865); the hook's switch read False after OFF,
 True after ON. Marko to tap OFF and see that the next answer is not read.
+
+## 19.10.2026: ✕ at the far upper-right of every window
+> please unify the position of the close button on every application. It's far upper right corner. There is X to close the dialog in every dialog, same
+
+Status: building v14.
