@@ -78,3 +78,8 @@ SPECTRUM ballistics (4.5 dB/oct tilt, attack at once, 30 dB/s release), asked 24
 Status: built v12 19.10.2026: THE BLOB WHILE SHE READS, ON / OFF, second row of the settings window (subtitle.json `blob`,
 ON by default); OFF hides it at once and it does not come back with the next reading. Seen in a screenshot: the row and
 v12 (old pid 64349 → new 10240). Marko to tap OFF.
+
+## 19.10.2026: no off switch for the blob; the voice engine ON / OFF instead
+> I don't want to off switch to the blob. Blob always needs to be on. I want at the top of settings when the blob appears there is a setting icon, and then in that window at the top voice engine off on off so I can turn it off
+
+Status: building v13: the blob's OFF row of v12 goes (the blob is always on); THE VOICE ENGINE gets ON / OFF at the top.
