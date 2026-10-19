@@ -43,7 +43,7 @@ final class BlobButton: NSView {
     }
 }
 
-// The wave: short white bars, round-ended, each one band of her sound; flat dots while paused or silent.
+// The wave: short white bars, round-ended, each one band of her sound, rising from one line; dots on it while silent.
 // v11: SPECTRAL_ANALYZER's SPECTRUM meter, made small (Marko: "I have a professional meter ... take the code from that
 // audio tools ... find a suitable meter from there and just attach it to this blob"). Its ballistics, as in
 // Analyzer.spectrumAndPictures: FabFilter's 4.5 dB/oct tilt about 1 kHz, an attack at once, a release of 30 dB/s
@@ -74,8 +74,9 @@ final class WaveView: NSView {
         NSColor(white: 1, alpha: 0.92).setFill()
         for i in 0..<n {
             let a = WaveView.height(spec[i])
-            let h = max(w, CGFloat(a) * (bounds.height - 12) + w)
-            let rect = NSRect(x: x0 + CGFloat(i) * (w + gap), y: (bounds.height - h) / 2, width: w, height: h)
+            // only the upper half (Marko, 19.10.2026): each bar stands on one line and rises, as a spectrum does
+            let h = max(w, CGFloat(a) * (bounds.height - 16) + w)
+            let rect = NSRect(x: x0 + CGFloat(i) * (w + gap), y: 9, width: w, height: h)
             NSBezierPath(roundedRect: rect, xRadius: w / 2, yRadius: w / 2).fill()
         }
     }

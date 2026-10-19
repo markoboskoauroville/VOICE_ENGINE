@@ -64,4 +64,4 @@ SPECTRUM ballistics (4.5 dB/oct tilt, attack at once, 30 dB/s release), asked 24
 
 > this is good, but I want to bring it a step forward. Only upper half you need to show me
 
-**Status:** in progress
+**Status:** built 19.10.2026 (v11): the bars stand on one line 9 points up and rise, as a spectrum does; seen in screenshots.
