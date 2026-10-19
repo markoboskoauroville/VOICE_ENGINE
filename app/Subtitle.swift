@@ -29,7 +29,7 @@ func nscolour(_ hex: String, _ alpha: CGFloat = 1) -> NSColor? {
 
 struct SubWord: Decodable { var s: Int?; var e: Int?; var t: Double?; var d: Double? }
 struct Speaking: Decodable {
-    var on: Bool; var phase: String?; var i: Int?; var n: Int?; var sentence: String?; var pos: Double?; var words: [SubWord]?
+    var on: Bool; var paused: Bool?; var phase: String?; var i: Int?; var n: Int?; var sentence: String?; var pos: Double?; var words: [SubWord]?
 }
 
 func post(_ path: String) {
@@ -155,12 +155,17 @@ final class SubtitleEngine {
     }
 
     func open() {
-        guard subs.isEmpty else { return }
         conf = SubtitleSettings.load()
+        guard subs.isEmpty, conf.subtitles else { return }      // v10: the blob's CC turns the subtitle off
         subs = NSScreen.screens.map { ScreenSub($0, self) }
         subs.forEach { $0.show() }
     }
     func drop() { subs.forEach { $0.close() }; subs = [] }
+    // v10, the blob's CC: on, the subtitle comes back at once with the sentence being said; off, it goes and stays gone
+    func setSubtitles(_ on: Bool) {
+        var c = SubtitleSettings.load(); c.subtitles = on; c.save(); conf = c
+        if on { if following { open(); show(text, words) } } else { drop() }
+    }
 
     func styled(_ s: ScreenSub, _ k: Int) -> NSAttributedString {
         let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: s.size) ?? .systemFont(ofSize: s.size)
@@ -239,6 +244,7 @@ final class SubtitleEngine {
         }.resume()
     }
     func heard(_ st: Speaking) {
+        Blob.shared.heard(st)
         if !following {
             // a reading began (or goes on after he clicked it away: then only a new reading brings it back)
             guard st.on else { dismissed = false; return }

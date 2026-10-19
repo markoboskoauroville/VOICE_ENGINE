@@ -17,3 +17,9 @@ Build: `./build.sh` (swiftc, no Xcode, signed "Mantra Apps"). Opened from the st
 
 Marko, 3.10.2026: *"In the star menu you can call it Claude to Marko voice, and then I can adjust parameters of
 this subtitle display"*; *"any settings are now Swift applications, and this is the rule."*
+
+## The blob (v10, 19.10.2026)
+
+While the voice reads, a small pill like Speechify's dictation blob floats above everything: ✕ cancels the reading, the
+dotted wave moves while she speaks, the speech-bubble button turns the subtitle on and off, ↻ says the reading again from
+the top, the blue button pauses and plays. Drag it anywhere; it comes back where you left it.

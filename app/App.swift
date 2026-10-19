@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 9
+let VERSION = 10
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -21,6 +21,7 @@ struct SubtitleSettings: Codable, Equatable {
     var linger: Double = 2          // v2: seconds the last sentence stays after the voice ends; 0 = until clicked (v3); 2 s by default (Marko, 13.10.2026)
     var offset: Double = 0          // v2: ms, the highlight earlier (−) or later (+) than the voice
     var bandmain: Bool = true       // v7: the band on the main (big) screen; off = letters only there (Marko, 13.10.2026)
+    var subtitles: Bool = true      // v10: the blob's CC, the subtitle on or off (Marko, 19.10.2026)
 
     init() {}
     // a file from an older version lacks the new keys: each one missing takes its default
@@ -38,6 +39,7 @@ struct SubtitleSettings: Codable, Equatable {
         linger = (try? c.decode(Double.self, forKey: .linger)) ?? z.linger
         offset = (try? c.decode(Double.self, forKey: .offset)) ?? z.offset
         bandmain = (try? c.decode(Bool.self, forKey: .bandmain)) ?? z.bandmain
+        subtitles = (try? c.decode(Bool.self, forKey: .subtitles)) ?? z.subtitles
     }
 
     static let file = URL(fileURLWithPath: NSHomeDirectory() + "/.config/subtitle.json")
