@@ -90,4 +90,7 @@ True after ON. Marko to tap OFF and see that the next answer is not read.
 ## 19.10.2026: ✕ at the far upper-right of every window
 > please unify the position of the close button on every application. It's far upper right corner. There is X to close the dialog in every dialog, same
 
-Status: building v14.
+Status: built v14 19.10.2026: ✕ at the right end of THE VOICE ENGINE's ON / OFF line in the settings window (closes the
+window, the app stays on), and ✕ at the upper-right of the Answer Claude box (closes it, nothing sent). Checked: the
+settings window captured by itself, v14 and the ✕ (the app was not running at the time, started: pid 22039). The
+answer box's ✕ is not seen yet (it opens only from a click on the subtitle).

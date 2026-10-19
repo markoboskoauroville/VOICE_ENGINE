@@ -26,3 +26,4 @@ the left, high at the right, rising from one line and falling fast), the speech-
 off, ⚙ opens the settings, ↻ says the reading again from the top, the blue button pauses and plays. Drag it anywhere; it comes back where you left it.
 v13: THE VOICE ENGINE, the window's first row, has ON / OFF: OFF stops the reading and no answer of Claude Code is read
 (`voice` in subtitle.json, obeyed by the hub's Stop hook subtitle_answer.py) until ON. The blob itself is always on.
+v14: ✕ at the far upper-right of the settings window and the Answer Claude box, as in every Mantra app (closes the window only).

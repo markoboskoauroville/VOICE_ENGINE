@@ -48,8 +48,14 @@ final class Box: NSPanel, NSTextViewDelegate {
         let v = NSView(frame: NSRect(x: 0, y: 0, width: W, height: H))
         let quote = NSTextField(wrappingLabelWithString: said)
         quote.font = NSFont(name: "Helvetica Neue", size: 16); quote.textColor = AMBER
-        quote.frame = NSRect(x: 20, y: H - 74, width: W - 40, height: 56)
+        quote.frame = NSRect(x: 20, y: H - 74, width: W - 76, height: 56)
         v.addSubview(quote)
+        // v14 (19.10.2026), Marko: "It's far upper right corner. There is X to close the dialog in every dialog, same."
+        let x = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close")!
+                            .withSymbolConfiguration(.init(pointSize: 15, weight: .bold))!, target: self, action: #selector(closeBox))
+        x.isBordered = false; x.contentTintColor = GREY; x.toolTip = "Close"
+        x.frame = NSRect(x: W - 44, y: H - 42, width: 30, height: 30)
+        v.addSubview(x)
         let scroll = NSScrollView(frame: NSRect(x: 20, y: 44, width: W - 40, height: H - 128))
         scroll.hasVerticalScroller = true; scroll.borderType = .noBorder
         text.frame = scroll.bounds
@@ -89,6 +95,7 @@ final class Box: NSPanel, NSTextViewDelegate {
         NSApp.terminate(nil)
     }
     override func close() { text.string = ""; send() }
+    @objc func closeBox() { close() }
 }
 
 let app = NSApplication.shared

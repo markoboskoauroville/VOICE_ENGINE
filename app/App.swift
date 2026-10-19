@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 13
+let VERSION = 14
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -206,6 +206,8 @@ struct EngineRow: View {
             HStack {
                 Word(text: "ON", on: m.s.voice) { m.s.voice = true }
                 Word(text: "OFF", on: !m.s.voice) { m.s.voice = false; postJSON("/speak/stop", "{}") }
+                Spacer()
+                CloseX()
             }
             if !m.s.voice {
             } else if !e.up {
@@ -231,6 +233,17 @@ struct EngineRow: View {
                 }
             }
         }
+    }
+}
+
+// v14 (19.10.2026). Marko: "please unify the position of the close button on every application. It's far upper right
+// corner. There is X to close the dialog in every dialog, same." The ✕ closes the window; the app stays on.
+struct CloseX: View {
+    var body: some View {
+        Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundColor(GREY)
+            .frame(width: 30, height: 30).contentShape(Rectangle())
+            .onTapGesture { (NSApp.delegate as? Delegate)?.window?.performClose(nil) }
+            .help("Close")
     }
 }
 
