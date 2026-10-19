@@ -18,8 +18,9 @@ Build: `./build.sh` (swiftc, no Xcode, signed "Mantra Apps"). Opened from the st
 Marko, 3.10.2026: *"In the star menu you can call it Claude to Marko voice, and then I can adjust parameters of
 this subtitle display"*; *"any settings are now Swift applications, and this is the rule."*
 
-## The blob (v10, 19.10.2026)
+## The blob (v10, v11, 19.10.2026)
 
 While the voice reads, a small pill like Speechify's dictation blob floats above everything: ✕ cancels the reading, the
-dotted wave moves while she speaks, the speech-bubble button turns the subtitle on and off, ↻ says the reading again from
-the top, the blue button pauses and plays. Drag it anywhere; it comes back where you left it.
+eleven bars are her voice itself (v11: MANTRA_VOICE's GET /speak/bands through Spectral Analyzer's spectrum meter, low at
+the left, high at the right, rising from one line and falling fast), the speech-bubble button turns the subtitle on and
+off, ⚙ opens the settings, ↻ says the reading again from the top, the blue button pauses and plays. Drag it anywhere; it comes back where you left it.
