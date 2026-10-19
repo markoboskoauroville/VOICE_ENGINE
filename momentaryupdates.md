@@ -75,5 +75,6 @@ SPECTRUM ballistics (4.5 dB/oct tilt, attack at once, 30 dB/s release), asked 24
 ## 19.10.2026: the blob can be turned off in the settings
 > please in the voice reader for Claude in the settings add a setting to turn it off so it doesn't reappear again
 
-Status: building v12: THE BLOB ON / OFF in the settings window (subtitle.json `blob`); off, the blob does not come back
-with the next reading.
+Status: built v12 19.10.2026: THE BLOB WHILE SHE READS, ON / OFF, second row of the settings window (subtitle.json `blob`,
+ON by default); OFF hides it at once and it does not come back with the next reading. Seen in a screenshot: the row and
+v12 (old pid 64349 → new 10240). Marko to tap OFF.

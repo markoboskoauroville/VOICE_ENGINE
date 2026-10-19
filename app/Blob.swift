@@ -14,6 +14,9 @@
 // these vertical lines": the bars are the engine's GET /speak/bands, 11 bands of the sound reaching the speaker now
 // (low at the left, high at the right), asked 24 times a second, through Spectral Analyzer's spectrum meter. Then "please also add to the blob setup gear
 // icon": ⚙ opens this app's settings window.
+//
+// v12 (19.10.2026). Marko: "in the settings add a setting to turn it off so it doesn't reappear again": THE BLOB WHILE
+// SHE READS, ON / OFF, kept in ~/.config/subtitle.json as `blob`.
 import AppKit
 
 let BLOB_W: CGFloat = 248, BLOB_H: CGFloat = 40
@@ -179,6 +182,8 @@ final class Blob {
 
     // every answer of GET /speaking: shown while she reads, gone a moment after she has ended
     func heard(_ st: Speaking) {
+        // v12: turned off in the settings, it stays away (the reading goes on; the subtitle is its own switch)
+        if !SubtitleSettings.load().blob { if panel?.isVisible == true { hide() }; return }
         if st.on {
             quiet = 0
             paused = st.paused ?? false

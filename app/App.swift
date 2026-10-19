@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 11
+let VERSION = 12
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -22,6 +22,7 @@ struct SubtitleSettings: Codable, Equatable {
     var offset: Double = 0          // v2: ms, the highlight earlier (−) or later (+) than the voice
     var bandmain: Bool = true       // v7: the band on the main (big) screen; off = letters only there (Marko, 13.10.2026)
     var subtitles: Bool = true      // v10: the blob's CC, the subtitle on or off (Marko, 19.10.2026)
+    var blob: Bool = true           // v12: the blob shows while she reads; off, it never comes back (Marko, 19.10.2026)
 
     init() {}
     // a file from an older version lacks the new keys: each one missing takes its default
@@ -40,6 +41,7 @@ struct SubtitleSettings: Codable, Equatable {
         offset = (try? c.decode(Double.self, forKey: .offset)) ?? z.offset
         bandmain = (try? c.decode(Bool.self, forKey: .bandmain)) ?? z.bandmain
         subtitles = (try? c.decode(Bool.self, forKey: .subtitles)) ?? z.subtitles
+        blob = (try? c.decode(Bool.self, forKey: .blob)) ?? z.blob
     }
 
     static let file = URL(fileURLWithPath: NSHomeDirectory() + "/.config/subtitle.json")
@@ -229,6 +231,13 @@ struct Settings: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             EngineRow(e: engine)
+            // v12, Marko: "add a setting to turn it off so it doesn't reappear again"
+            Row(name: "THE BLOB WHILE SHE READS", value: m.s.blob ? "ON" : "OFF") {
+                HStack {
+                    Word(text: "ON", on: m.s.blob) { m.s.blob = true }
+                    Word(text: "OFF", on: !m.s.blob) { m.s.blob = false; Blob.shared.hide() }
+                }
+            }
             // the subtitle as it will look, small
             ZStack {
                 Rectangle().fill(Color(white: m.s.grey / 100).opacity(m.s.band / 100))
