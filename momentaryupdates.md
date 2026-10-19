@@ -38,3 +38,9 @@ voice.lua steps aside while this app runs (MANTRA_STAR 3310386, at the next Hamm
 > For some reason lately I don't see subtitles. But this blob can enable disable subtitles as well. Put this also as a feature.
 
 **Status:** built 19.10.2026 (v10, app/Blob.swift). The blob, from his Speechify screenshot: a dark pill, grey round ✕ (cancel: /speak/stop, the subtitle goes too), the white dotted wave (moving while she speaks, flat dots while paused), CC (the subtitle on/off, kept in ~/.config/subtitle.json as `subtitles`), ↻ (from the top: /speak/top), the blue round pause/play (/speak/pause). Shown while the voice reads, gone a moment after; dragged by its body, its place kept (UserDefaults blobOrigin). Seen in screenshots: speaking (wave, ⏸), paused (dots, ▶; the voice's clock held), from the top (sentence 1, played on), subtitles off (no letters, CC dimmed), gone after the end. Why he did not see subtitles: the app was running (v9 since 06:00) and they showed, at the TOP, 3 % letters, no band on the big screen (his settings), easy to miss over an app. Marko to try the clicks and the drag.
+
+## 19.10.2026: the blob's wave is the voice's own FFT bands
+
+> Please fix the Visualization on the reader. What's going on is that um It's just animation, it should react to the voice itself. So make uh Like divided by bands. Like visualization of the FFT, FFT analyzation. In these vertical lines.
+
+**Status:** in progress
