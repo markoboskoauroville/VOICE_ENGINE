@@ -44,3 +44,9 @@ voice.lua steps aside while this app runs (MANTRA_STAR 3310386, at the next Hamm
 > Please fix the Visualization on the reader. What's going on is that um It's just animation, it should react to the voice itself. So make uh Like divided by bands. Like visualization of the FFT, FFT analyzation. In these vertical lines.
 
 **Status:** in progress
+
+## 19.10.2026: a setup gear on the blob
+
+> please also add to the blob setup gear icon
+
+**Status:** in progress
