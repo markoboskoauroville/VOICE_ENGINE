@@ -71,3 +71,9 @@ SPECTRUM ballistics (4.5 dB/oct tilt, attack at once, 30 dB/s release), asked 24
 > this is almost good, but make it fall off much faster
 
 **Status:** built 19.10.2026 (v11): the release is the analyzer's VERY FAST, 120 dB/s (was MEDIUM, 30)
+
+## 19.10.2026: the blob can be turned off in the settings
+> please in the voice reader for Claude in the settings add a setting to turn it off so it doesn't reappear again
+
+Status: building v12: THE BLOB ON / OFF in the settings window (subtitle.json `blob`); off, the blob does not come back
+with the next reading.
