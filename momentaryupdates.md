@@ -30,3 +30,11 @@ The speaking subtitle (MANTRA_STAR apps/voice.lua, VOICEBUBBLE) becomes the engi
 --test-subtitle: the MacBook's band with − + and PREVIOUS NEXT REPLAY CLOSE, the big screen letters only (bandmain off);
 the settings window reopens. Not checked: a real reading with the word highlight (the voice server was down).
 voice.lua steps aside while this app runs (MANTRA_STAR 3310386, at the next Hammerspoon restart). Marko to try.
+
+## 19.10.2026: the voice blob (pause, cancel, start from the top, subtitles on/off), like Speechify's
+
+> we need to improve interaction with the voice. After you finish your prompts and your processes in cloud code, there is battery speaking to me what happened, which is nice. But sometimes I want to stop her. So please open the blob which looks like speechify blob, and I can pause, I can cancel, and I can start from the top. Start from the top is circular arrow, cancel is x. Let's build that. So while she's speaking, I have the same blob as speechify. If you don't know how it looks, look at the desktop. I just took a screenshot of the blob itself, so you can copy the looks. Of course, blob can be moved by mouse, and then you need to remember the last position
+
+> For some reason lately I don't see subtitles. But this blob can enable disable subtitles as well. Put this also as a feature.
+
+**Status:** started 19.10.2026.
