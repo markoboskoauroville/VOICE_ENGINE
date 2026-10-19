@@ -82,4 +82,7 @@ v12 (old pid 64349 → new 10240). Marko to tap OFF.
 ## 19.10.2026: no off switch for the blob; the voice engine ON / OFF instead
 > I don't want to off switch to the blob. Blob always needs to be on. I want at the top of settings when the blob appears there is a setting icon, and then in that window at the top voice engine off on off so I can turn it off
 
-Status: building v13: the blob's OFF row of v12 goes (the blob is always on); THE VOICE ENGINE gets ON / OFF at the top.
+Status: built v13 19.10.2026: the v12 blob row is gone (the blob is always on). THE VOICE ENGINE, the first row, has ON / OFF:
+OFF stops the reading now (/speak/stop) and writes `voice: false` to subtitle.json; the Stop hook subtitle_answer.py (hub)
+reads nothing then. Checked: the row in a screenshot (v13, old pid 10240 → 10865); the hook's switch read False after OFF,
+True after ON. Marko to tap OFF and see that the next answer is not read.

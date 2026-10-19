@@ -24,4 +24,5 @@ While the voice reads, a small pill like Speechify's dictation blob floats above
 eleven bars are her voice itself (v11: MANTRA_VOICE's GET /speak/bands through Spectral Analyzer's spectrum meter, low at
 the left, high at the right, rising from one line and falling fast), the speech-bubble button turns the subtitle on and
 off, ⚙ opens the settings, ↻ says the reading again from the top, the blue button pauses and plays. Drag it anywhere; it comes back where you left it.
-v12: THE BLOB WHILE SHE READS, ON / OFF in the settings window, turns it off for good (`blob` in subtitle.json).
+v13: THE VOICE ENGINE, the window's first row, has ON / OFF: OFF stops the reading and no answer of Claude Code is read
+(`voice` in subtitle.json, obeyed by the hub's Stop hook subtitle_answer.py) until ON. The blob itself is always on.

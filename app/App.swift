@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 12
+let VERSION = 13
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -22,7 +22,7 @@ struct SubtitleSettings: Codable, Equatable {
     var offset: Double = 0          // v2: ms, the highlight earlier (−) or later (+) than the voice
     var bandmain: Bool = true       // v7: the band on the main (big) screen; off = letters only there (Marko, 13.10.2026)
     var subtitles: Bool = true      // v10: the blob's CC, the subtitle on or off (Marko, 19.10.2026)
-    var blob: Bool = true           // v12: the blob shows while she reads; off, it never comes back (Marko, 19.10.2026)
+    var voice: Bool = true          // v13: THE VOICE ENGINE ON / OFF; off, the Stop hook reads no answer (Marko, 19.10.2026)
 
     init() {}
     // a file from an older version lacks the new keys: each one missing takes its default
@@ -41,7 +41,7 @@ struct SubtitleSettings: Codable, Equatable {
         offset = (try? c.decode(Double.self, forKey: .offset)) ?? z.offset
         bandmain = (try? c.decode(Bool.self, forKey: .bandmain)) ?? z.bandmain
         subtitles = (try? c.decode(Bool.self, forKey: .subtitles)) ?? z.subtitles
-        blob = (try? c.decode(Bool.self, forKey: .blob)) ?? z.blob
+        voice = (try? c.decode(Bool.self, forKey: .voice)) ?? z.voice
     }
 
     static let file = URL(fileURLWithPath: NSHomeDirectory() + "/.config/subtitle.json")
@@ -74,7 +74,7 @@ let BG_SWATCHES: [(String, String)] = [("NONE", ""), ("YELLOW", "#F5E663"), ("RE
 let SWATCHES: [(String, String)] = [("ORANGE", "#E8A33D"), ("WHITE", "#FFFFFF"), ("YELLOW", "#F5E663"), ("SAND", "#F2DDB4"), ("GREEN", "#33D17A"), ("CYAN", "#7FDBFF")]
 
 final class Model: ObservableObject {
-    @Published var s = SubtitleSettings.load() { didSet { if s != oldValue && !outside { s.save(); schedulePreview() } } }
+    @Published var s = SubtitleSettings.load() { didSet { if s != oldValue && !outside { s.save(); if s.voice == oldValue.voice { schedulePreview() } } } }
     private var pending: DispatchWorkItem?
     private var outside = false
     private var watch: Timer?
@@ -195,11 +195,20 @@ final class Engine: ObservableObject {
     func hear() { post("/speak", ["text": "Marko, this is how I sound now."]) }
 }
 
+// v13 (19.10.2026). Marko: "in that window at the top voice engine on off so I can turn it off": OFF stops the reading
+// now (/speak/stop) and is kept in subtitle.json as `voice: false`, which the Stop hook subtitle_answer.py obeys, so no
+// answer is read until ON. The voice server itself keeps running (this app never starts or stops it).
 struct EngineRow: View {
     @ObservedObject var e: Engine
+    @ObservedObject var m: Model
     var body: some View {
-        Row(name: "THE VOICE ENGINE", value: !e.up ? "VOICE IS OFF" : e.engine == "beatrice" ? "SPEECHIFY (BEATRICE)" : "CLONE · " + e.voice.uppercased()) {
-            if !e.up {
+        Row(name: "THE VOICE ENGINE", value: !m.s.voice ? "OFF, ANSWERS NOT READ" : !e.up ? "VOICE IS OFF" : e.engine == "beatrice" ? "SPEECHIFY (BEATRICE)" : "CLONE · " + e.voice.uppercased()) {
+            HStack {
+                Word(text: "ON", on: m.s.voice) { m.s.voice = true }
+                Word(text: "OFF", on: !m.s.voice) { m.s.voice = false; postJSON("/speak/stop", "{}") }
+            }
+            if !m.s.voice {
+            } else if !e.up {
                 Text("The voice server at :8837 is not running. The Voices row in the star starts it.")
                     .font(.system(size: 11, design: .monospaced)).foregroundColor(GREY)
             } else {
@@ -230,14 +239,7 @@ struct Settings: View {
     @StateObject var engine = Engine()
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            EngineRow(e: engine)
-            // v12, Marko: "add a setting to turn it off so it doesn't reappear again"
-            Row(name: "THE BLOB WHILE SHE READS", value: m.s.blob ? "ON" : "OFF") {
-                HStack {
-                    Word(text: "ON", on: m.s.blob) { m.s.blob = true }
-                    Word(text: "OFF", on: !m.s.blob) { m.s.blob = false; Blob.shared.hide() }
-                }
-            }
+            EngineRow(e: engine, m: m)
             // the subtitle as it will look, small
             ZStack {
                 Rectangle().fill(Color(white: m.s.grey / 100).opacity(m.s.band / 100))
