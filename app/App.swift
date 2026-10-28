@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 14
+let VERSION = 15
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -202,7 +202,14 @@ struct EngineRow: View {
     @ObservedObject var e: Engine
     @ObservedObject var m: Model
     var body: some View {
-        Row(name: "THE VOICE ENGINE", value: !m.s.voice ? "OFF, ANSWERS NOT READ" : !e.up ? "VOICE IS OFF" : e.engine == "beatrice" ? "SPEECHIFY (BEATRICE)" : "CLONE · " + e.voice.uppercased()) {
+        Row(name: "THE VOICE ENGINE", value: !m.s.voice ? "OFF, ANSWERS NOT READ" : !e.up ? "VOICE IS OFF" : engineName(e.engine, e.voice)) {
+            // v15 (28.10.2026, Marko: "Put all the engines, and the ones which are not active are grayed out. The ones
+            // which are active are in the green color"): every engine first, a click makes it the one that talks
+            HStack(spacing: 0) {
+                Word(text: "SPEECHIFY API", on: e.up && e.engine == "beatrice") { e.use(engine: "beatrice") }
+                Word(text: "LOCAL VOICE ENGINE", on: e.up && e.engine == "clone") { e.use(engine: "clone", voice: e.voice.isEmpty ? e.voices.first : e.voice) }
+                Spacer()
+            }
             HStack {
                 Word(text: "ON", on: m.s.voice) { m.s.voice = true }
                 Word(text: "OFF", on: !m.s.voice) { m.s.voice = false; postJSON("/speak/stop", "{}") }
@@ -216,8 +223,6 @@ struct EngineRow: View {
             } else {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
-                        Word(text: "CLONE", on: e.engine == "clone") { e.use(engine: "clone", voice: e.voice.isEmpty ? e.voices.first : e.voice) }
-                        Word(text: "SPEECHIFY", on: e.engine == "beatrice") { e.use(engine: "beatrice") }
                         Spacer()
                         Word(text: e.busy ? "…" : "HEAR IT", on: false) { e.hear() }
                     }

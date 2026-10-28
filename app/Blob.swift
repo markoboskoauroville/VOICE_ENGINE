@@ -16,7 +16,16 @@
 // icon": ⚙ opens this app's settings window.
 import AppKit
 
-let BLOB_W: CGFloat = 248, BLOB_H: CGFloat = 40
+let BLOB_W: CGFloat = 248, BLOB_H: CGFloat = 40, NAME_H: CGFloat = 16
+
+// v15 (28.10.2026, Marko: "I want to be aware of what kind of engine is used for voice. We have API to Speechify. Then
+// you need to put Speechify API. I have a local voice engine. Then you put Local Voice Engine"): the engine in his
+// words, at the top of the window and in small letters above the blob, with the voice (and the local model reading now).
+func engineName(_ engine: String, _ voice: String, _ model: String = "") -> String {
+    if engine == "beatrice" { return "SPEECHIFY API · BEATRICE" }
+    if engine == "clone" { return (["LOCAL VOICE ENGINE", voice.uppercased(), model.uppercased()].filter { !$0.isEmpty }).joined(separator: " · ") }
+    return engine.isEmpty ? "NO ENGINE" : engine.uppercased()
+}
 let BLUE = NSColor(calibratedRed: 0x3D / 255, green: 0x7B / 255, blue: 0xF7 / 255, alpha: 1)
 
 final class BlobButton: NSView {
@@ -105,6 +114,7 @@ final class Blob {
     static let shared = Blob()
     var panel: NSPanel?
     let wave = WaveView(frame: NSRect(x: 40, y: 0, width: 74, height: BLOB_H))
+    let name = NSTextField(labelWithString: "")
     var pauseKey: BlobButton!, ccKey: BlobButton!
     var timer: Timer?
     var asking = false
@@ -112,7 +122,7 @@ final class Blob {
     var quiet = 0
 
     func make() -> NSPanel {
-        let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: BLOB_W, height: BLOB_H),
+        let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: BLOB_W, height: BLOB_H + NAME_H),
                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.overlayWindow)) + 1)   // above the subtitle band
         p.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
@@ -132,7 +142,15 @@ final class Blob {
         pill.addSubview(pauseKey)
         for v in pill.subviews { v.toolTip = ["xmark": "Cancel", "captions.bubble.fill": "Subtitles on / off", "gearshape.fill": "Setup",
                                               "arrow.counterclockwise": "From the top", "pause.fill": "Pause / play"][(v as? BlobButton)?.symbol ?? ""] }
-        p.contentView = pill
+        let box = NSView(frame: NSRect(x: 0, y: 0, width: BLOB_W, height: BLOB_H + NAME_H))
+        box.addSubview(pill)
+        name.frame = NSRect(x: 0, y: BLOB_H + 1, width: BLOB_W, height: NAME_H - 2)
+        name.isBezeled = false; name.drawsBackground = false; name.isEditable = false; name.isSelectable = false
+        name.alignment = .center; name.font = .monospacedSystemFont(ofSize: 9.5, weight: .semibold)
+        name.textColor = NSColor(white: 1, alpha: 0.75)
+        let sh = NSShadow(); sh.shadowColor = .black; sh.shadowBlurRadius = 3; name.shadow = sh
+        box.addSubview(name)
+        p.contentView = box
         p.setFrameOrigin(savedOrigin())
         return p
     }
@@ -156,11 +174,25 @@ final class Blob {
         ccKey.symbol = SubtitleEngine.shared.conf.subtitles ? "captions.bubble.fill" : "captions.bubble"
         ccKey.tint = SubtitleEngine.shared.conf.subtitles ? NSColor(white: 0.95, alpha: 1) : NSColor(white: 0.5, alpha: 1)
         panel?.orderFrontRegardless()
+        askName()
         if timer == nil {
             timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 24, repeats: true) { [weak self] _ in
                 self?.askBands()
             }
         }
+    }
+    // v15: which engine reads: GET /health (engine, voice), GET /speaking (the local model of this reading)
+    func askName() {
+        func get(_ path: String, _ done: @escaping ([String: Any]) -> Void) {
+            var r = URLRequest(url: URL(string: VOICE_URL + path)!); r.timeoutInterval = 1
+            URLSession.shared.dataTask(with: r) { d, _, _ in
+                done((d.flatMap { try? JSONSerialization.jsonObject(with: $0) } as? [String: Any]) ?? [:])
+            }.resume()
+        }
+        get("/health") { h in get("/speaking") { s in
+            let t = engineName(h["engine"] as? String ?? "", h["voice"] as? String ?? "", s["model"] as? String ?? "")
+            DispatchQueue.main.async { self.name.stringValue = t }
+        } }
     }
     // GET /speak/bands, one question at a time: a late answer is skipped, never queued
     func askBands() {
