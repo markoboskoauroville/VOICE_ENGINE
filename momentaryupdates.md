@@ -106,3 +106,5 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 "please include the voice engine just at the top of the user interface. I want to be aware of what kind of engine is used for voice. We have API to Speechify. Then you need to put Speechify API. I have a local voice engine. Then you put Local Voice Engine. If you have something more, let me know"
 
 "it's at the top of this cloud in the marko voice user interface. Put all the engines, and the ones which are not active are grayed out. The ones which are active are in the green color"
+
+"between two voice engines, put one pipe so I know where one ends and the other begins"
