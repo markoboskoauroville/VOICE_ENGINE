@@ -102,3 +102,5 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 "please read me the workflow aloud and with the blob for controlling the voice on voice engine, please"
 
 "and you need to discretely display it on the bottom of the screen every time the voice is read"
+
+"please include the voice engine just at the top of the user interface. I want to be aware of what kind of engine is used for voice. We have API to Speechify. Then you need to put Speechify API. I have a local voice engine. Then you put Local Voice Engine. If you have something more, let me know"
