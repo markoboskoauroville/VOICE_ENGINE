@@ -108,3 +108,5 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 "it's at the top of this cloud in the marko voice user interface. Put all the engines, and the ones which are not active are grayed out. The ones which are active are in the green color"
 
 "between two voice engines, put one pipe so I know where one ends and the other begins"
+
+"Pipe should not be grey. Should be yellow"

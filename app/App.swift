@@ -207,7 +207,7 @@ struct EngineRow: View {
             // which are active are in the green color"): every engine first, a click makes it the one that talks
             HStack(spacing: 0) {
                 Word(text: "SPEECHIFY API", on: e.up && e.engine == "beatrice") { e.use(engine: "beatrice") }
-                Text("|").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(GREY)   // "one pipe ... where one ends"
+                Text("|").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(AMBER)   // "one pipe ... where one ends"
                 Word(text: "LOCAL VOICE ENGINE", on: e.up && e.engine == "clone") { e.use(engine: "clone", voice: e.voice.isEmpty ? e.voices.first : e.voice) }
                 Spacer()
             }
