@@ -94,3 +94,11 @@ Status: built v14 19.10.2026: ✕ at the right end of THE VOICE ENGINE's ON / OF
 window, the app stays on), and ✕ at the upper-right of the Answer Claude box (closes it, nothing sent). Checked: the
 settings window captured by itself, v14 and the ✕ (the app was not running at the time, started: pid 22039). The
 answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
+
+## 28.10.2026
+
+"please, when you read anything from this chat or anything using this local voice engine, you need to give me Blob to control this voice. Blob has a simple user interface: one arrow, a round arrow going backwards. It means repeat, repeat from the top. It has pause, and it has X to stop talking, and that's it. It's similar to this Blob from Speechify, which I'm using, and you can see the screenshot on the desktop from it right now. That's it"
+
+"please read me the workflow aloud and with the blob for controlling the voice on voice engine, please"
+
+"and you need to discretely display it on the bottom of the screen every time the voice is read"
