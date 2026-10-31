@@ -128,3 +128,7 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 
 - A click on the subtitle made it disappear; a click on the blob did not bring it back: fix. **Status:** done v18 (click never hides; double-click = answer box; blob click and CC bring it back)
 - The subtitle band dragged with the mouse, vertically only, anywhere on the screen, while it reads; the place kept. **Status:** done v18 (ypos in subtitle.json); Marko tests the drag
+
+> Subtitles working fantastic. It's all working.
+
+- v18 tested by Marko: drag, click, blob bring-back all work. **Status:** done, confirmed 31.10.2026
