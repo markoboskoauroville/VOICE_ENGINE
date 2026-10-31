@@ -36,6 +36,8 @@ cat > "$A/Contents/Info.plist" <<PL
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIdentifier</key><string>community.auroville.answerclaude</string>
 <key>CFBundleExecutable</key><string>AnswerClaude</string>
+<key>CFBundleShortVersionString</key><string>$V</string>
+<key>CFBundleVersion</key><string>$V</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>LSUIElement</key><true/>
 </dict></plist>

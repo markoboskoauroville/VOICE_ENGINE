@@ -5,6 +5,11 @@
 // (the process ran, nothing was seen). Enter sends (the words to ~/.voice/replies/<time>.txt, which the Claude Code
 // session watches); Shift+Enter is a new line; Escape or an empty Enter closes. Either way the subtitle closes and
 // the reading's wave files go (POST /speak/close).
+// v19 of the repo (31.10.2026, Marko: "Each needs to have the same user interface elements. On, off and top. Please
+// build it in every application."): the first row ON OFF · ANSWER CLAUDE · TOP ✕ (MANTRA_MANIFEST swift-apps.md, "The
+// first row of every app"). OFF quits as the ✕ does (the box is the whole app: nothing sent, the subtitle closed).
+// TOP green = the box above every window, the screenSaver+1 level of v5 (it opened under the subtitle); grey = a
+// normal window. Kept in UserDefaults "onTop", on by default so the box behaves as before. Accessibility ids off, top, close.
 import AppKit
 
 let REPLIES = NSHomeDirectory() + "/.voice/replies"
@@ -16,6 +21,19 @@ let said: String = {
 let AMBER = NSColor(calibratedRed: 0.91, green: 0.64, blue: 0.24, alpha: 1)
 let SAND = NSColor(calibratedRed: 0.95, green: 0.87, blue: 0.71, alpha: 1)
 let GREY = NSColor(calibratedRed: 0.48, green: 0.50, blue: 0.53, alpha: 1)
+let GREEN = NSColor(calibratedRed: 0x33/255.0, green: 0xD1/255.0, blue: 0x7A/255.0, alpha: 1)
+let ROWFONT = NSFont.monospacedSystemFont(ofSize: 12, weight: .bold)
+let ABOVE = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)) + 1)
+
+// a word on the first row: a borderless button, its colour its state
+func rowWord(_ title: String, _ colour: NSColor, _ id: String, _ label: String, _ target: AnyObject, _ action: Selector) -> NSButton {
+    let b = NSButton(title: title, target: target, action: action)
+    b.isBordered = false
+    b.attributedTitle = NSAttributedString(string: title, attributes: [.font: ROWFONT, .foregroundColor: colour])
+    b.setAccessibilityIdentifier(id); b.setAccessibilityLabel(label)
+    b.sizeToFit()
+    return b
+}
 
 func closeSubtitle() {
     var r = URLRequest(url: URL(string: "http://127.0.0.1:8837/speak/close")!)
@@ -34,29 +52,44 @@ func closeSubtitle() {
 
 final class Box: NSPanel, NSTextViewDelegate {
     let text = NSTextView()
+    var top: NSButton!
+    var onTop: Bool { UserDefaults.standard.bool(forKey: "onTop") }
     init() {
-        let W: CGFloat = 820, H: CGFloat = 260
+        UserDefaults.standard.register(defaults: ["onTop": true])
+        let W: CGFloat = 820, H: CGFloat = 290
         let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main!
         let f = screen.visibleFrame
         super.init(contentRect: NSRect(x: f.midX - W / 2, y: f.midY - H / 2, width: W, height: H),
                    styleMask: [.titled, .closable], backing: .buffered, defer: false)
         title = "Answer Claude (Mantra)"
-        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)) + 1)
+        level = UserDefaults.standard.bool(forKey: "onTop") ? ABOVE : .normal
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         backgroundColor = NSColor(calibratedRed: 0.043, green: 0.051, blue: 0.063, alpha: 1)
         appearance = NSAppearance(named: .darkAqua)
         let v = NSView(frame: NSRect(x: 0, y: 0, width: W, height: H))
         let quote = NSTextField(wrappingLabelWithString: said)
         quote.font = NSFont(name: "Helvetica Neue", size: 16); quote.textColor = AMBER
-        quote.frame = NSRect(x: 20, y: H - 74, width: W - 76, height: 56)
+        quote.frame = NSRect(x: 20, y: H - 104, width: W - 40, height: 56)
         v.addSubview(quote)
+        // v19: the first row, ON OFF at the left, the name in the centre, TOP and the ✕ at the right
+        let on = rowWord("ON", GREEN, "on", "On", self, #selector(nothing))
+        on.frame.origin = NSPoint(x: 20, y: H - 33); v.addSubview(on)
+        let off = rowWord("OFF", GREY, "off", "Off", self, #selector(offPressed))
+        off.frame.origin = NSPoint(x: on.frame.maxX + 10, y: H - 33); v.addSubview(off)
+        let name = NSTextField(labelWithString: "ANSWER CLAUDE")
+        name.font = ROWFONT; name.textColor = SAND; name.sizeToFit()
+        name.frame.origin = NSPoint(x: (W - name.frame.width) / 2, y: H - 32); v.addSubview(name)
+        top = rowWord("TOP", GREY, "top", "Top", self, #selector(topPressed))
+        top.frame.origin = NSPoint(x: W - 96, y: H - 33); v.addSubview(top)
+        paintTop()
         // v14 (19.10.2026), Marko: "It's far upper right corner. There is X to close the dialog in every dialog, same."
         let x = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close")!
                             .withSymbolConfiguration(.init(pointSize: 15, weight: .bold))!, target: self, action: #selector(closeBox))
         x.isBordered = false; x.contentTintColor = GREY; x.toolTip = "Close"
-        x.frame = NSRect(x: W - 44, y: H - 42, width: 30, height: 30)
+        x.setAccessibilityIdentifier("close"); x.setAccessibilityLabel("Close window")
+        x.frame = NSRect(x: W - 44, y: H - 40, width: 30, height: 30)
         v.addSubview(x)
-        let scroll = NSScrollView(frame: NSRect(x: 20, y: 44, width: W - 40, height: H - 128))
+        let scroll = NSScrollView(frame: NSRect(x: 20, y: 44, width: W - 40, height: H - 158))
         scroll.hasVerticalScroller = true; scroll.borderType = .noBorder
         text.frame = scroll.bounds
         text.font = NSFont(name: "Helvetica Neue", size: 21); text.textColor = SAND
@@ -96,6 +129,19 @@ final class Box: NSPanel, NSTextViewDelegate {
     }
     override func close() { text.string = ""; send() }
     @objc func closeBox() { close() }
+    // v19: the row's words
+    @objc func nothing() {}
+    @objc func offPressed() { DispatchQueue.main.async { self.close() } }
+    @objc func topPressed() {
+        UserDefaults.standard.set(!onTop, forKey: "onTop")
+        level = onTop ? ABOVE : .normal
+        paintTop()
+    }
+    func paintTop() {
+        top.attributedTitle = NSAttributedString(string: "TOP", attributes: [.font: ROWFONT, .foregroundColor: onTop ? GREEN : GREY])
+        top.setAccessibilityValue(onTop ? "on" : "off")
+        top.toolTip = "Always on top: green, the box stays above every other window"
+    }
 }
 
 let app = NSApplication.shared

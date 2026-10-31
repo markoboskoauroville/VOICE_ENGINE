@@ -7,7 +7,12 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 18
+// v19 (31.10.2026, Marko: "Each needs to have the same user interface elements. On, off and top. Please build it in
+// every application."): TOP on the settings window's ON / OFF row before the ✕, green = the window stays above every
+// other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
+// are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
+// own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
+let VERSION = 19
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -218,6 +223,7 @@ struct EngineRow: View {
                 Word(text: "ON", on: m.s.voice) { m.s.voice = true }
                 Word(text: "OFF", on: !m.s.voice) { m.s.voice = false; postJSON("/speak/stop", "{}") }
                 Spacer()
+                TopWord()                                   // v19
                 CloseX()
             }
             if !m.s.voice {
@@ -252,7 +258,34 @@ struct CloseX: View {
         Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundColor(GREY)
             .frame(width: 30, height: 30).contentShape(Rectangle())
             .onTapGesture { (NSApp.delegate as? Delegate)?.window?.performClose(nil) }
+            .axButton("Close window", id: "close") { (NSApp.delegate as? Delegate)?.window?.performClose(nil) }
             .help("Close")
+    }
+}
+
+// v19 (31.10.2026): TOP, green = the settings window stays above every other window; remembered in "onTop"
+struct TopWord: View {
+    @AppStorage("onTop") private var onTop = false
+    var body: some View {
+        Word(text: "TOP", on: onTop) { onTop.toggle(); TopWord.float(onTop) }
+            .axButton("Top", id: "top", value: onTop ? "on" : "off") { onTop.toggle(); TopWord.float(onTop) }
+            .help("Always on top: green, the window stays above every other window")
+            .onAppear { DispatchQueue.main.async { TopWord.float(onTop) } }
+    }
+    static func float(_ on: Bool) {
+        for w in NSApp.windows where w.title.hasPrefix("Claude to Marko") { w.level = on ? .floating : .normal }
+    }
+}
+
+// every control an Accessibility button (MANTRA_MANIFEST swift-apps.md, "Accessibility built in")
+extension View {
+    func axButton(_ label: String, id: String, value: String? = nil, _ action: @escaping () -> Void) -> some View {
+        accessibilityElement(children: .ignore)
+            .accessibilityLabel(label)
+            .accessibilityIdentifier(id)
+            .accessibilityValue(value ?? "")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction(.default, action)
     }
 }
 

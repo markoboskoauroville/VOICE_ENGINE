@@ -15,3 +15,7 @@ These constants are at the top of `WaveView`; Marko may still want the height ch
 ## v16, 31.10.2026
 
 The engine name moved under the pill (it lay on the subtitle words); the band on the big screen (bandmain) switched back on, so the BenQ and the MacBook show the same grey band. Installed and relaunched (pid 97645 -> 36369, the first `open` after the copy failed with -600 and the second worked). Checked with a reading on both screens.
+
+## v19, 31.10.2026
+
+TOP on the settings window ON / OFF row (`TopWord` in app/App.swift, `onTop`), AX ids `top`, `close`. Answer Claude (reply/main.swift) has the first row ON OFF · ANSWER CLAUDE · TOP ✕ (rowWord, offPressed, topPressed/paintTop; `onTop` registered true so the box stays above everything by default). Relaunched with --login (pid 68778 -> 94423).
