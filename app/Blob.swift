@@ -143,8 +143,12 @@ final class Blob {
         for v in pill.subviews { v.toolTip = ["xmark": "Cancel", "captions.bubble.fill": "Subtitles on / off", "gearshape.fill": "Setup",
                                               "arrow.counterclockwise": "From the top", "pause.fill": "Pause / play"][(v as? BlobButton)?.symbol ?? ""] }
         let box = NSView(frame: NSRect(x: 0, y: 0, width: BLOB_W, height: BLOB_H + NAME_H))
+        // v16 (Marko, 31.10.2026: "Whatever is written atop of the voice blob ... It's written over subtitles"): the
+        // engine's name goes UNDER the pill. The blob sits at the bottom of the subtitle band, so above it the name
+        // lay on the subtitle's words; under it, it is below the text.
+        pill.setFrameOrigin(NSPoint(x: 0, y: NAME_H))
         box.addSubview(pill)
-        name.frame = NSRect(x: 0, y: BLOB_H + 1, width: BLOB_W, height: NAME_H - 2)
+        name.frame = NSRect(x: 0, y: 1, width: BLOB_W, height: NAME_H - 2)
         name.isBezeled = false; name.drawsBackground = false; name.isEditable = false; name.isSelectable = false
         name.alignment = .center; name.font = .monospacedSystemFont(ofSize: 9.5, weight: .semibold)
         name.textColor = NSColor(white: 1, alpha: 0.75)

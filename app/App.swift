@@ -7,7 +7,7 @@
 import SwiftUI
 import AppKit
 
-let VERSION = 15
+let VERSION = 16
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height

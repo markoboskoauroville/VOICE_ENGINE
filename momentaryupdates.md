@@ -115,5 +115,5 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 
 > First, please fix my voice blob. Whatever is written atop of the voice blob, now it's written Speechify API batteries. It's written over subtitles. And on the BenQ screen under subtitles I don't have grey background. What's going on? Why left and right screen are different? I don't understand this. Please make them look the same. And that's it. Fix my... How we call this application? Voice application.
 
-- The engine label above the blob ("SPEECHIFY API · BEATRICE") is drawn over the subtitle: it must never overlap it. **Status:** building
-- The BenQ's subtitle has no grey band, the MacBook's has: both screens the same. **Status:** building
+- The engine label is drawn over the subtitle: never overlap. **Status:** done v16: the name under the pill
+- The BenQ without its band: both the same. **Status:** done: "BAND ON THE BIG SCREEN" (bandmain, off since 13.10.2026) switched ON in ~/.config/subtitle.json; seen on both screens

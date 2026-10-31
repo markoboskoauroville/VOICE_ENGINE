@@ -11,3 +11,7 @@ A key added here must be read in `readConf()` in `apps/voice.lua` (it has the de
 **State (19.10.2026):** v11. The blob (`app/Blob.swift`) asks `GET /speak/bands` 24 times a second while shown and draws
 `db` through `WaveView.take`: tilt 4.5 dB/oct about 1 kHz, attack at once, release 120 dB/s, height from -60 to -6 dB.
 These constants are at the top of `WaveView`; Marko may still want the height changed after a long reading.
+
+## v16, 31.10.2026
+
+The engine name moved under the pill (it lay on the subtitle words); the band on the big screen (bandmain) switched back on, so the BenQ and the MacBook show the same grey band. Installed and relaunched (pid 97645 -> 36369, the first `open` after the copy failed with -600 and the second worked). Checked with a reading on both screens.
