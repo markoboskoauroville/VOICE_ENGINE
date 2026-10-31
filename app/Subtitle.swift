@@ -63,10 +63,30 @@ final class BandView: NSView {
     var text = NSAttributedString()
     var textRect = NSRect.zero
     var onClick: () -> Void = {}
+    // v18 (Marko, 31.10.2026: "I clicked on the subtitle itself and it disappeared ... add a feature that I can click on the
+    // subtitle and pull it vertically only on the screen, wherever I want to, with my mouse while it's reading"): a drag
+    // moves the band up or down only (every screen follows, the place is kept in subtitle.json `ypos`); a click never
+    // hides it; a double-click opens the answer box, as a single click did before.
+    var onDrag: (CGFloat) -> Void = { _ in }            // the band's new centre y, in screen points
+    var onDragEnd: () -> Void = {}
+    private var grab: CGFloat?, startCentre: CGFloat = 0, moved = false
     override var isFlipped: Bool { true }                // top-left, as voice.lua laid it out
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
-    override func mouseDown(with e: NSEvent) {}
-    override func mouseUp(with e: NSEvent) { onClick() }
+    override func resetCursorRects() { addCursorRect(bounds, cursor: .resizeUpDown) }
+    override func mouseDown(with e: NSEvent) {
+        grab = NSEvent.mouseLocation.y; startCentre = window?.frame.midY ?? 0; moved = false
+    }
+    override func mouseDragged(with e: NSEvent) {
+        guard let g = grab else { return }
+        let dy = NSEvent.mouseLocation.y - g
+        if abs(dy) > 3 { moved = true }
+        if moved { onDrag(startCentre + dy) }
+    }
+    override func mouseUp(with e: NSEvent) {
+        let wasDrag = moved; grab = nil; moved = false
+        if wasDrag { onDragEnd(); return }
+        if e.clickCount == 2 { onClick() }
+    }
     override func draw(_ r: NSRect) {
         fill.setFill(); bounds.fill()
         text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
@@ -87,6 +107,8 @@ final class ScreenSub {
         panel.hidesOnDeactivate = false; panel.becomesKeyOnlyIfNeeded = true
         panel.contentView = band
         band.onClick = { [weak engine] in engine?.answer() }
+        band.onDrag = { [weak engine, weak self] y in if let s = self { engine?.dragTo(y, on: s) } }
+        band.onDragEnd = { [weak engine] in engine?.dragDone() }
         let left: [(String, CGFloat, () -> Void)] = [("−", 0, { [weak engine] in engine?.resize(-0.5) }),
                                                       ("+", 76, { [weak engine] in engine?.resize(0.5) })]
         for (t, x, f) in left { band.addSubview(KeyLabel(t, 52, NSRect(x: 12 + x, y: 0, width: 70, height: 70), f)) }
@@ -111,6 +133,7 @@ final class ScreenSub {
         let h = max(floor(lines * size * 1.22 + size * 0.7), 110)
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
+        if c.ypos >= 0 { y = ScreenSub.clampY(vf.minY + CGFloat(c.ypos) * vf.height - h / 2, h, vf) }   // v18: dragged
         panel.setFrame(NSRect(x: vf.minX, y: y, width: vf.width, height: h), display: false)
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
@@ -119,6 +142,12 @@ final class ScreenSub {
         let keys = keyViews
         for k in keys.prefix(2) { k.frame.origin.y = (h - 70) / 2 }
         for k in keys.dropFirst(2) { k.frame.origin.y = (h - 44) / 2 }       // x: SubtitleEngine.placeKeys
+    }
+    static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
+    /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
+    func moveTo(fraction f: CGFloat) {
+        let vf = screen.visibleFrame, h = panel.frame.height
+        panel.setFrameOrigin(NSPoint(x: vf.minX, y: ScreenSub.clampY(vf.minY + f * vf.height - h / 2, h, vf)))
     }
     func show() { panel.orderFrontRegardless() }
     func close() { panel.orderOut(nil); panel.close() }
@@ -164,7 +193,7 @@ final class SubtitleEngine {
     // v10, the blob's CC: on, the subtitle comes back at once with the sentence being said; off, it goes and stays gone
     func setSubtitles(_ on: Bool) {
         var c = SubtitleSettings.load(); c.subtitles = on; c.save(); conf = c
-        if on { if following { open(); show(text, words) } } else { drop() }
+        if on { bringBack() } else { drop() }          // v18: on brings it back at once, following or not
     }
 
     func styled(_ s: ScreenSub, _ k: Int) -> NSAttributedString {
@@ -226,8 +255,29 @@ final class SubtitleEngine {
             let cfg = NSWorkspace.OpenConfiguration(); cfg.createsNewApplicationInstance = true; cfg.arguments = ["--said", text]
             NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/Applications/Answer Claude (Mantra).app"), configuration: cfg)
         }
-        dismissed = true
-        hide()
+        // v18: the subtitle stays (Marko, 31.10.2026: "I clicked on the subtitle itself and it disappeared")
+    }
+
+    // v18: dragging. The band on the screen under the mouse follows it; every other screen takes the same height fraction
+    var dragFraction: CGFloat?
+    func dragTo(_ centreY: CGFloat, on s: ScreenSub) {
+        let vf = s.screen.visibleFrame
+        let f = min(max((centreY - vf.minY) / vf.height, 0), 1)
+        dragFraction = f
+        for x in subs { x.moveTo(fraction: f) }
+    }
+    func dragDone() {
+        guard let f = dragFraction else { return }
+        dragFraction = nil
+        var c = SubtitleSettings.load(); c.ypos = Double(f); c.save(); conf = c
+    }
+    /// v18: the blob brings the subtitle back while she reads: CC on, dismissal forgotten, following again
+    func bringBack() {
+        var c = SubtitleSettings.load()
+        if !c.subtitles { c.subtitles = true; c.save(); conf = c }
+        dismissed = false
+        follow()
+        if !text.isEmpty { show(text, words) }
     }
 
     // GET /speaking: five times a second while following, once a second while idle

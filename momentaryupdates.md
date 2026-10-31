@@ -126,5 +126,5 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 
 > Now this reading what happened has bugs. I clicked on the subtitle itself and it disappeared. Then I clicked on the blob to bring back the subtitle and it didn't bring it back. So my subtitles were completely gone. Please, what you need to do is fix this behavior and add to the voice, please add a feature that I can click on the subtitle and pull it vertically only on the screen, wherever I want to, with my mouse while it's reading, while at the same time.
 
-- A click on the subtitle made it disappear; a click on the blob did not bring it back: fix. **Status:** checking
-- The subtitle band dragged with the mouse, vertically only, anywhere on the screen, while it reads; the place kept. **Status:** next
+- A click on the subtitle made it disappear; a click on the blob did not bring it back: fix. **Status:** done v18 (click never hides; double-click = answer box; blob click and CC bring it back)
+- The subtitle band dragged with the mouse, vertically only, anywhere on the screen, while it reads; the place kept. **Status:** done v18 (ypos in subtitle.json); Marko tests the drag

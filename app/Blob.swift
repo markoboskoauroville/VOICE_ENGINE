@@ -107,7 +107,14 @@ final class PillView: NSView {
         let m = NSEvent.mouseLocation
         w.setFrameOrigin(NSPoint(x: origin.x + m.x - s.x, y: origin.y + m.y - s.y))
     }
-    override func mouseUp(with e: NSEvent) { if start != nil { start = nil; onMoved() } }
+    override func mouseUp(with e: NSEvent) {
+        guard let s = start else { return }
+        start = nil
+        let m = NSEvent.mouseLocation
+        if abs(m.x - s.x) < 3 && abs(m.y - s.y) < 3 {       // v18: a click, not a drag: the subtitle comes back
+            SubtitleEngine.shared.bringBack()
+        } else { onMoved() }
+    }
 }
 
 final class Blob {
@@ -240,7 +247,10 @@ final class Blob {
         postJSON("/speak/pause", paused ? "{\"paused\": true}" : "{\"paused\": false}")
     }
     func toggleSubtitles() {
-        SubtitleEngine.shared.setSubtitles(!SubtitleEngine.shared.conf.subtitles)
+        let e = SubtitleEngine.shared
+        // v18: on but not on the screen (hidden by a click before v18): CC brings it back instead of turning it off
+        if e.conf.subtitles && e.subs.isEmpty { e.bringBack(); show(); return }
+        e.setSubtitles(!e.conf.subtitles)
         show()
     }
 }
