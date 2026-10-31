@@ -117,3 +117,7 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 
 - The engine label is drawn over the subtitle: never overlap. **Status:** done v16: the name under the pill
 - The BenQ without its band: both the same. **Status:** done: "BAND ON THE BIG SCREEN" (bandmain, off since 13.10.2026) switched ON in ~/.config/subtitle.json; seen on both screens
+
+> Problem with Speech Blob is that behind this status line there is kind of background. I mean second layer of background. I need black background but I don't need another background. Fix user interface.
+
+- Only the pill's own black background; no second background/shadow layer behind the name line. **Status:** building
