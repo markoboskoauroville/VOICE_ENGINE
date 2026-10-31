@@ -126,7 +126,10 @@ final class Blob {
                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.overlayWindow)) + 1)   // above the subtitle band
         p.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
-        p.isOpaque = false; p.backgroundColor = .clear; p.hasShadow = true
+        // v17 (Marko, 31.10.2026: "behind this status line there is kind of background ... second layer of background. I need
+        // black background but I don't need another background"): no window shadow; it outlined the pill and the name line
+        // together and read as a second background. Only the pill's own black.
+        p.isOpaque = false; p.backgroundColor = .clear; p.hasShadow = false
         p.hidesOnDeactivate = false; p.becomesKeyOnlyIfNeeded = true
         let pill = PillView(frame: NSRect(x: 0, y: 0, width: BLOB_W, height: BLOB_H))
         pill.onMoved = { [weak self] in self?.remember() }

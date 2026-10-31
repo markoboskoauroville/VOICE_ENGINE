@@ -120,4 +120,4 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 
 > Problem with Speech Blob is that behind this status line there is kind of background. I mean second layer of background. I need black background but I don't need another background. Fix user interface.
 
-- Only the pill's own black background; no second background/shadow layer behind the name line. **Status:** building
+- Only the pill's own black background. **Status:** done v17: window shadow off (pid 36369 -> 70542)
