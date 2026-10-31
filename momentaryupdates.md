@@ -132,3 +132,9 @@ answer box's ✕ is not seen yet (it opens only from a click on the subtitle).
 > Subtitles working fantastic. It's all working.
 
 - v18 tested by Marko: drag, click, blob bring-back all work. **Status:** done, confirmed 31.10.2026
+
+## 31.10.2026: ON, OFF and TOP in every application
+
+> "Please go to all the interface of my applications. Each needs to have the same user interface elements. On, off and top. Please build it in every application."
+
+The first row as in MANTRA_MANIFEST swift-apps.md, "The first row of every app: ON OFF … TOP ✕": ON, OFF, the name, TOP (always on top, UserDefaults `onTop`), PERMISSIONS while missing, ✕. Only what is missing is added. **Status:** pending
