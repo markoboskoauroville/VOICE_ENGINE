@@ -144,3 +144,9 @@ The first row as in MANTRA_MANIFEST swift-apps.md, "The first row of every app: 
 > Please unite both applications into one. Voice of Claude Mantra and Claude to Marko Voice Mantra should be one app and actually I want to unite the voicing engine for the whole computer. So we need to call it voice engine. That's it. So both applications now becoming voice engine. and in the control of how actually subtitles are displayed, I want to have some kind of different words because I don't understand this control panel. So the band on the big screen. this confusing word. We need to call what's appearing on the on the screen subtitles and then you're going to see what can be control for subtitles and please copy exactly this user interface on the desktop.
 
 **Status:** done 1.11.2026 (v20): Voice Engine (Mantra) installed and running, the two old apps in the Trash, the star row and voiced.py point at it; the window seen in a screenshot: ON OFF · VOICE ENGINE · TOP ✕ with the three parts, WHICH VOICE SPEAKS, SUBTITLES with every control renamed (band → background, big screen → main screen); `--status` prints the parts. The repository renamed CLAUDE_TO_MARKO_VOICE → VOICE_ENGINE.
+
+## 1.11.2026 (a held voice says why, and can be released)
+
+> Please update the voice app if it stops. It just inform me what is taking the sound. So I'm informed. Now I was confused. Understand. If it's it needs to give a reason. Pause because of this and that. that. And then I can skip it and the voice will read. It will not be blocked without being able for me to unblock it.
+
+**Status:** in work.
