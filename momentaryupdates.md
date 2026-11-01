@@ -149,4 +149,6 @@ The first row as in MANTRA_MANIFEST swift-apps.md, "The first row of every app: 
 
 > Please update the voice app if it stops. It just inform me what is taking the sound. So I'm informed. Now I was confused. Understand. If it's it needs to give a reason. Pause because of this and that. that. And then I can skip it and the voice will read. It will not be blocked without being able for me to unblock it.
 
+> The app is only not starting, I mean the reading is not starting if I'm reading to my voice to text application and to Speechify. If I'm sending audio to these two applications, you are pausing your answers through my voice engine. So we are just limiting to this. All other open applications which are recording, taking my sound, you need to ignore.
+
 **Status:** in work.
