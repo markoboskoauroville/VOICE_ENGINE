@@ -19,3 +19,13 @@ The engine name moved under the pill (it lay on the subtitle words); the band on
 ## v19, 31.10.2026
 
 TOP on the settings window ON / OFF row (`TopWord` in app/App.swift, `onTop`), AX ids `top`, `close`. Answer Claude (reply/main.swift) has the first row ON OFF · ANSWER CLAUDE · TOP ✕ (rowWord, offPressed, topPressed/paintTop; `onTop` registered true so the box stays above everything by default). Relaunched with --login (pid 68778 -> 94423).
+
+## 1.11.2026, v20: Voice Engine (Mantra)
+
+- The app is `/Applications/Voice Engine (Mantra).app`, bundle `community.auroville.voiceengine`, executable `VoiceEngine`
+  (was Claude to Marko Voice, `community.auroville.claudetomarkovoice`); Answer Claude (Mantra) unchanged.
+- App.swift: `Switch` + `SwitchRow` (Voice of Claude v6's launchd start/stop and the three parts), `EngineRow` only picks
+  the voice, `Settings` renamed throughout; `--on/--off/--status` in `Main.main`. The `voice` key of subtitle.json is no
+  longer shown (it fed only subtitle_answer.py, out since 31.10.2026). A click on TOP / MIDDLE / BOTTOM sets `ypos` -1.
+- The old two apps are in the Trash; the star row `claudevoice` opens Voice Engine (STAR_SWIFT c138a55), the row
+  `voiceofclaude` is gone; MANTRA_VOICE voiced.py BLOB_APP points at Voice Engine (takes effect at voiced's next start).

@@ -1,3 +1,28 @@
+# Voice Engine (Mantra)
+
+**The voice of the whole Mac in one app** (since v20, 1.11.2026). Marko: *"Please unite both applications into one.
+Voice of Claude Mantra and Claude to Marko Voice Mantra should be one app ... we need to call it voice engine ... We need
+to call what's appearing on the screen subtitles."* Until v19 this repository was CLAUDE_TO_MARKO_VOICE (the subtitles);
+Voice of Claude (the engine's switch, repo VOICE_OF_CLAUDE, v6) is now its first row.
+
+The window, top to bottom:
+
+- **ON OFF · VOICE ENGINE · TOP ✕**: ON and OFF start and stop the engine (MANTRA_VOICE: its LaunchAgent
+  `com.mantra.voiced`), remembered for the next login; under it SPEAKING SERVER (the API at 127.0.0.1:8837),
+  LISTENING (Whisper) and CLONED VOICE, each RUNNING or STOPPED. The same from a terminal:
+  `"/Applications/Voice Engine (Mantra).app/Contents/MacOS/VoiceEngine" --on | --off | --status`.
+- **WHICH VOICE SPEAKS**: SPEECHIFY | CLONED VOICE ON THE MAC, HEAR IT, and the cloned voices.
+- **SUBTITLES** (the words written on the screens while the voice speaks): ON / OFF, SHOW A TEST SUBTITLE, a preview,
+  LETTER SIZE, LETTER COLOUR, COLOUR OF THE WORD BEING SPOKEN, MARKER BEHIND THE SPOKEN WORD, SPOKEN WORD LIT EARLIER /
+  LATER, SUBTITLE STAYS AFTER THE VOICE STOPS, BACKGROUND BEHIND THE SUBTITLE (clear ↔ solid), BACKGROUND SHADE
+  (dark ↔ light), BACKGROUND ON THE MAIN SCREEN, WHERE ON THE SCREEN (TOP / MIDDLE / BOTTOM, or WHERE YOU DRAGGED IT).
+  The old words: "band" is the background, "big screen" the main screen.
+
+The app also draws the subtitles and the blob while the voice reads (below); the star brings it back at login with
+`--login`, and MANTRA_VOICE's voiced.py opens it if a reading starts without it. Build: `./build.sh`.
+
+---
+
 # Claude to Marko voice
 
 The settings of the **speaking subtitle**: while the computer speaks to Marko (MANTRA_VOICE, `POST /speak`),

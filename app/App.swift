@@ -1,4 +1,12 @@
-// CLAUDE TO MARKO VOICE: the speaking subtitle and its settings.
+// VOICE ENGINE (Mantra): the voice of the whole Mac in one app, its switch, its voice and its subtitles.
+// v20 (Marko, 1.11.2026: "Please unite both applications into one. Voice of Claude Mantra and Claude to Marko Voice Mantra
+// should be one app ... we need to call it voice engine ... We need to call what's appearing on the on the screen
+// subtitles ... I don't understand this control panel. So the band on the big screen. this confusing word"): Voice of
+// Claude's switch (start / stop MANTRA_VOICE through launchd, its three parts RUNNING / STOPPED) is the first row here;
+// the controls are named for what they do (SUBTITLES, BACKGROUND, MAIN SCREEN); "OFF, ANSWERS NOT READ" is gone (it fed
+// only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
+//
+// CLAUDE TO MARKO VOICE (until v19): the speaking subtitle and its settings.
 // Marko, 3.10.2026: "In the star menu you can call it Claude to Marko voice, and then I can adjust parameters of
 // this subtitle display"; "any settings are now Swift applications, and this is the rule."
 // v8 (13.10.2026, "no more Lua, only Swift"): the subtitle itself is drawn by this app (Subtitle.swift), no longer by
@@ -12,7 +20,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 19
+let VERSION = 20
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -203,46 +211,125 @@ final class Engine: ObservableObject {
     func hear() { post("/speak", ["text": "Marko, this is how I sound now."]) }
 }
 
+// THE SWITCH (v20, from Voice of Claude v6, 8.10.2026: "make [a Swift app] ... in which I can easily turn on and off the
+// engine"). The engine is three processes: voiced.py (the HTTP API on :8837), ears.py (Whisper) and clone.py (the cloned
+// voice). ON asks launchd to start voiced (com.mantra.voiced, no KeepAlive) and remembers it (the agent enabled, so
+// login starts it); OFF stops all three and remembers it (the agent disabled). The window stays either way.
+let HOME = NSHomeDirectory()
+let VOICE_DIR = HOME + "/Developer/MANTRA_VOICE"
+let PYTHON = HOME + "/.pyenv/versions/3.10.14/bin/python3"
+let AGENT = "com.mantra.voiced"
+
+@discardableResult
+func sh(_ cmd: String) -> (Int32, String) {
+    let p = Process(); let pipe = Pipe()
+    p.executableURL = URL(fileURLWithPath: "/bin/sh"); p.arguments = ["-c", cmd]
+    p.standardOutput = pipe; p.standardError = pipe
+    do { try p.run() } catch { return (-1, "") }
+    let d = pipe.fileHandleForReading.readDataToEndOfFile(); p.waitUntilExit()
+    return (p.terminationStatus, String(data: d, encoding: .utf8) ?? "")
+}
+func alive(_ pattern: String) -> Bool { sh("/usr/bin/pgrep -f '\(pattern)' >/dev/null").0 == 0 }
+
+struct Part: Identifiable { let id: String; let what: String; let pattern: String }
+let PARTS = [
+    Part(id: "SPEAKING SERVER", what: "the door every app talks to, 127.0.0.1:8837", pattern: "MANTRA_VOICE/voiced.py"),
+    Part(id: "LISTENING", what: "Whisper, speech to text; wakes when asked", pattern: "MANTRA_VOICE/ears.py serve"),
+    Part(id: "CLONED VOICE", what: "the voice model on the Mac; wakes when asked", pattern: "MANTRA_VOICE/clone.py serve"),
+]
+
+final class Switch: ObservableObject {
+    @Published var up: [String: Bool] = [:]
+    @Published var busy: String? = nil          // "STARTING" / "STOPPING" while the switch works
+    private var timer: Timer?
+    private let q = DispatchQueue(label: "switch")
+    var on: Bool { up[PARTS[0].id] ?? false }   // the engine is on when its server answers
+    init() {
+        look()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.look() }
+    }
+    func look() {
+        q.async {
+            var u: [String: Bool] = [:]
+            for p in PARTS { u[p.id] = alive(p.pattern) }
+            DispatchQueue.main.async { self.up = u }
+        }
+    }
+    func start() { busy = "STARTING"; q.async { Switch.startNow(); DispatchQueue.main.async { self.busy = nil; self.look() } } }
+    func stop() { busy = "STOPPING"; q.async { Switch.stopNow(); DispatchQueue.main.async { self.busy = nil; self.look() } } }
+    static func startNow() {
+        let uid = getuid()
+        sh("launchctl enable gui/\(uid)/\(AGENT)")
+        if sh("launchctl kickstart gui/\(uid)/\(AGENT)").0 != 0 {
+            sh("launchctl bootstrap gui/\(uid) '\(HOME)/Library/LaunchAgents/\(AGENT).plist'")
+        }
+        for _ in 0..<40 where !alive(PARTS[0].pattern) { usleep(250_000) }
+    }
+    static func stopNow() {
+        sh("launchctl disable gui/\(getuid())/\(AGENT)")
+        sh("/usr/bin/pkill -f 'MANTRA_VOICE/voiced.py'")
+        sh("'\(PYTHON)' '\(VOICE_DIR)/clone.py' stop; '\(PYTHON)' '\(VOICE_DIR)/ears.py' stop")
+        for _ in 0..<20 where PARTS.contains(where: { alive($0.pattern) }) { usleep(250_000) }
+        sh("/usr/bin/pkill -f 'MANTRA_VOICE/(ears|clone).py serve'")
+    }
+}
+
+// The first row (v20): ON OFF · VOICE ENGINE · TOP ✕, then the three parts. ON / OFF start and stop the engine itself.
+struct SwitchRow: View {
+    @ObservedObject var sw: Switch
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 0) {
+                if let b = sw.busy {
+                    Text(b).font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(AMBER).padding(.horizontal, 6)
+                } else {
+                    Word(text: "ON", on: sw.on) { if !sw.on { sw.start() } }
+                        .axButton("Voice engine on", id: "engine-on", value: sw.on ? "on" : "off") { if sw.busy == nil && !sw.on { sw.start() } }
+                    Word(text: "OFF", on: !sw.on) { if sw.on { sw.stop() } }
+                        .axButton("Voice engine off", id: "engine-off", value: sw.on ? "on" : "off") { if sw.busy == nil && sw.on { sw.stop() } }
+                }
+                Text("VOICE ENGINE").font(.system(size: 15, weight: .bold, design: .monospaced)).foregroundColor(SAND).padding(.leading, 12)
+                Spacer()
+                TopWord()
+                CloseX()
+            }
+            ForEach(PARTS) { p in
+                let u = sw.up[p.id] ?? false
+                HStack(spacing: 10) {
+                    Circle().fill(u ? GREEN : GREY).frame(width: 8, height: 8)
+                    Text(p.id).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(u ? GREEN : GREY).frame(width: 128, alignment: .leading)
+                    Text(p.what).font(.system(size: 11)).foregroundColor(SAND.opacity(0.7)).lineLimit(1)
+                    Spacer()
+                    Text(u ? "RUNNING" : "STOPPED").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(u ? GREEN : GREY)
+                }
+            }
+        }
+    }
+}
+
 // v13 (19.10.2026). Marko: "in that window at the top voice engine on off so I can turn it off": OFF stops the reading
 // now (/speak/stop) and is kept in subtitle.json as `voice: false`, which the Stop hook subtitle_answer.py obeys, so no
 // answer is read until ON. The voice server itself keeps running (this app never starts or stops it).
 struct EngineRow: View {
     @ObservedObject var e: Engine
-    @ObservedObject var m: Model
     var body: some View {
-        Row(name: "THE VOICE ENGINE", value: !m.s.voice ? "OFF, ANSWERS NOT READ" : !e.up ? "VOICE IS OFF" : engineName(e.engine, e.voice)) {
-            // v15 (28.10.2026, Marko: "Put all the engines, and the ones which are not active are grayed out. The ones
-            // which are active are in the green color"): every engine first, a click makes it the one that talks
+        // v20: which voice speaks; the switch above starts and stops the engine itself
+        Row(name: "WHICH VOICE SPEAKS", value: !e.up ? "ENGINE OFF" : engineName(e.engine, e.voice)) {
             HStack(spacing: 0) {
-                Word(text: "SPEECHIFY API", on: e.up && e.engine == "beatrice") { e.use(engine: "beatrice") }
-                Text("|").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(AMBER)   // "one pipe ... where one ends"
-                Word(text: "LOCAL VOICE ENGINE", on: e.up && e.engine == "clone") { e.use(engine: "clone", voice: e.voice.isEmpty ? e.voices.first : e.voice) }
+                Word(text: "SPEECHIFY", on: e.up && e.engine == "beatrice") { e.use(engine: "beatrice") }
+                Text("|").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(AMBER)
+                Word(text: "CLONED VOICE ON THE MAC", on: e.up && e.engine == "clone") { e.use(engine: "clone", voice: e.voice.isEmpty ? e.voices.first : e.voice) }
                 Spacer()
+                if e.up { Word(text: e.busy ? "…" : "HEAR IT", on: false) { e.hear() } }
             }
-            HStack {
-                Word(text: "ON", on: m.s.voice) { m.s.voice = true }
-                Word(text: "OFF", on: !m.s.voice) { m.s.voice = false; postJSON("/speak/stop", "{}") }
-                Spacer()
-                TopWord()                                   // v19
-                CloseX()
-            }
-            if !m.s.voice {
-            } else if !e.up {
-                Text("The voice server at :8837 is not running. The Voices row in the star starts it.")
+            if !e.up {
+                Text("The engine is off: ON above starts it.")
                     .font(.system(size: 11, design: .monospaced)).foregroundColor(GREY)
-            } else {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Spacer()
-                        Word(text: e.busy ? "…" : "HEAR IT", on: false) { e.hear() }
-                    }
-                    if e.engine == "clone" {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 0) {
-                                ForEach(e.voices, id: \.self) { v in
-                                    Word(text: v.uppercased(), on: e.voice == v) { e.use(engine: "clone", voice: v) }
-                                }
-                            }
+            } else if e.engine == "clone" {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 0) {
+                        ForEach(e.voices, id: \.self) { v in
+                            Word(text: v.uppercased(), on: e.voice == v) { e.use(engine: "clone", voice: v) }
                         }
                     }
                 }
@@ -273,7 +360,7 @@ struct TopWord: View {
             .onAppear { DispatchQueue.main.async { TopWord.float(onTop) } }
     }
     static func float(_ on: Bool) {
-        for w in NSApp.windows where w.title.hasPrefix("Claude to Marko") { w.level = on ? .floating : .normal }
+        for w in NSApp.windows where w.title.hasPrefix("Voice Engine") { w.level = on ? .floating : .normal }
     }
 }
 
@@ -292,9 +379,22 @@ extension View {
 struct Settings: View {
     @ObservedObject var m: Model
     @StateObject var engine = Engine()
+    @StateObject var sw = Switch()
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            EngineRow(e: engine, m: m)
+            SwitchRow(sw: sw)
+            Divider().overlay(GREY.opacity(0.35))
+            EngineRow(e: engine)
+            Divider().overlay(GREY.opacity(0.35))
+            // v20: SUBTITLES, the words written on the screens while the voice speaks
+            Row(name: "SUBTITLES", value: m.s.subtitles ? "SHOWN WHILE THE VOICE SPEAKS" : "OFF, VOICE ONLY") {
+                HStack {
+                    Word(text: "ON", on: m.s.subtitles) { m.s.subtitles = true }
+                    Word(text: "OFF", on: !m.s.subtitles) { m.s.subtitles = false }
+                    Spacer()
+                    Word(text: "SHOW A TEST SUBTITLE", on: false) { Model.preview() }
+                }
+            }
             // the subtitle as it will look, small
             ZStack {
                 Rectangle().fill(Color(white: m.s.grey / 100).opacity(m.s.band / 100))
@@ -306,14 +406,14 @@ struct Settings: View {
             .frame(height: 64)
             .background(LinearGradient(colors: [Color(white: 0.35), Color(white: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
 
-            Row(name: "LETTERS", value: String(format: "%.1f %% of the screen", m.s.size)) {
+            Row(name: "LETTER SIZE", value: String(format: "%.1f %% of the screen height", m.s.size)) {
                 HStack {
                     BigKey(text: "−") { m.s.size = max(2, m.s.size - 0.5) }
                     Slider(value: $m.s.size, in: 2...14, step: 0.5)
                     BigKey(text: "+") { m.s.size = min(14, m.s.size + 0.5) }
                 }
             }
-            Row(name: "COLOUR", value: SWATCHES.first { $0.1 == m.s.colour }?.0 ?? m.s.colour) {
+            Row(name: "LETTER COLOUR", value: SWATCHES.first { $0.1 == m.s.colour }?.0 ?? m.s.colour) {
                 HStack(spacing: 10) {
                     ForEach(SWATCHES, id: \.1) { sw in
                         Circle().fill(colour(sw.1)).frame(width: 26, height: 26)
@@ -324,41 +424,49 @@ struct Settings: View {
                     Word(text: "BOLD", on: m.s.bold) { m.s.bold.toggle() }
                 }.padding(.vertical, 4)
             }
-            Row(name: "THE WORD BEING SAID", value: WORD_SWATCHES.first { $0.1 == m.s.word }?.0 ?? m.s.word) {
+            Row(name: "COLOUR OF THE WORD BEING SPOKEN", value: WORD_SWATCHES.first { $0.1 == m.s.word }?.0 ?? m.s.word) {
                 Swatches(list: WORD_SWATCHES, value: $m.s.word)
             }
-            Row(name: "BEHIND THAT WORD", value: BG_SWATCHES.first { $0.1 == m.s.wordbg }?.0 ?? m.s.wordbg) {
+            Row(name: "MARKER BEHIND THE SPOKEN WORD", value: BG_SWATCHES.first { $0.1 == m.s.wordbg }?.0 ?? m.s.wordbg) {
                 Swatches(list: BG_SWATCHES, value: $m.s.wordbg)
             }
-            Row(name: "THE WORD EARLIER / LATER", value: String(format: "%+.0f ms", m.s.offset)) {
+            Row(name: "SPOKEN WORD LIT EARLIER / LATER", value: String(format: "%+.0f ms", m.s.offset)) {
                 Slider(value: $m.s.offset, in: -400...400, step: 10)
             }
-            Row(name: "STAYS AFTER THE VOICE", value: lingerName(m.s.linger)) {
+            Row(name: "SUBTITLE STAYS AFTER THE VOICE STOPS", value: lingerName(m.s.linger)) {
                 HStack {
                     ForEach([2.0, 30.0, 120.0, 600.0, 0.0], id: \.self) { v in
                         Word(text: lingerName(v), on: m.s.linger == v) { m.s.linger = v }
                     }
                 }
             }
-            Row(name: "BAND", value: String(format: "%.0f %% seen", m.s.band)) {
-                Slider(value: $m.s.band, in: 0...100, step: 1)
+            Row(name: "BACKGROUND BEHIND THE SUBTITLE", value: m.s.band < 1 ? "NONE" : String(format: "%.0f %% solid", m.s.band)) {
+                HStack(spacing: 8) {
+                    Text("CLEAR").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                    Slider(value: $m.s.band, in: 0...100, step: 1)
+                    Text("SOLID").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                }
             }
-            Row(name: "BAND ON THE BIG SCREEN", value: m.s.bandmain ? "ON" : "OFF, LETTERS ONLY") {
+            Row(name: "BACKGROUND SHADE", value: String(format: "%.0f %% light", m.s.grey)) {
+                HStack(spacing: 8) {
+                    Text("DARK").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                    Slider(value: $m.s.grey, in: 0...60, step: 1)
+                    Text("LIGHT").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                }
+            }
+            Row(name: "BACKGROUND ON THE MAIN SCREEN", value: m.s.bandmain ? "ON" : "OFF, LETTERS ONLY THERE") {
                 HStack {
                     Word(text: "ON", on: m.s.bandmain) { m.s.bandmain = true }
                     Word(text: "OFF", on: !m.s.bandmain) { m.s.bandmain = false }
                 }
             }
-            Row(name: "BAND GREY", value: String(format: "%.0f %%", m.s.grey)) {
-                Slider(value: $m.s.grey, in: 0...60, step: 1)
-            }
-            Row(name: "WHERE", value: m.s.position.uppercased()) {
+            Row(name: "WHERE ON THE SCREEN", value: m.s.ypos >= 0 ? "WHERE YOU DRAGGED IT" : m.s.position.uppercased()) {
                 HStack {
                     ForEach(["top", "middle", "bottom"], id: \.self) { p in
-                        Word(text: p.uppercased(), on: m.s.position == p) { m.s.position = p }
+                        // v20: a click places it there, also after a drag (the drag kept `ypos`, which won over this choice)
+                        Word(text: p.uppercased(), on: m.s.ypos < 0 && m.s.position == p) { m.s.ypos = -1; m.s.position = p }
                     }
                     Spacer()
-                    Word(text: "SHOW ON THE SCREENS", on: false) { Model.preview() }
                 }
             }
             HStack {
@@ -367,7 +475,7 @@ struct Settings: View {
             }
         }
         .padding(24)
-        .frame(width: 520)
+        .frame(width: 560)
         .background(INK)
         .tint(AMBER)
         .preferredColorScheme(.dark)
@@ -477,7 +585,7 @@ final class Delegate: NSObject, NSApplicationDelegate {
     func openSettings() {
         if model == nil { model = Model() }
         if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
-        open(NSHostingController(rootView: Settings(m: model!)), "Claude to Marko voice (Mantra)")
+        open(NSHostingController(rootView: Settings(m: model!)), "Voice Engine (Mantra)")
     }
     func open<V: View>(_ vc: NSHostingController<V>, _ title: String) {
         let w = NSWindow(contentViewController: vc)
@@ -490,6 +598,16 @@ final class Delegate: NSObject, NSApplicationDelegate {
 @main
 struct Main {
     static func main() {
+        // v20: the engine's switch from a terminal (Voice of Claude's): --on, --off, --status print, then exit
+        let a = CommandLine.arguments
+        if a.contains("--on") || a.contains("--off") || a.contains("--status") {
+            if a.contains("--on") { Switch.startNow() }
+            if a.contains("--off") { Switch.stopNow() }
+            for p in PARTS { print(p.id + ": " + (alive(p.pattern) ? "running" : "stopped")) }
+            let off = sh("launchctl print-disabled gui/\(getuid()) | grep -q '\"\(AGENT)\" => \\(true\\|disabled\\)'").0 == 0
+            print("AT LOGIN: " + (off ? "stays off" : "starts"))
+            exit(0)
+        }
         let app = NSApplication.shared
         let d = Delegate(); app.delegate = d
         app.setActivationPolicy(.accessory)        // an engine: no Dock icon; the window comes and goes

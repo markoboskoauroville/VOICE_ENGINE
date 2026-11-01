@@ -14,3 +14,9 @@ v10's bars were two sines, moving whatever she said, and Marko saw it at once. A
 moment it is heard: the engine measures each buffer as it is handed to the speaker and keeps it with its DAC time,
 and the blob asks for the one sounding now. The ballistics were taken from SPECTRAL_ANALYZER rather than invented,
 and the held peaks taken out again because he did not want them on so small a thing.
+
+## 1.11.2026
+
+- A dragged subtitle (`ypos` ≥ 0) silently beat the WHERE choice: the window said BOTTOM while the subtitle sat near the
+  top. A setting that another gesture can override must show that ("WHERE YOU DRAGGED IT") and a click must win back.
+- Two apps for one engine confused Marko ("I have two voice engines"): one switch and its settings belong in one window.

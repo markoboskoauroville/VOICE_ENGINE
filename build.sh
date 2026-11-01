@@ -1,21 +1,21 @@
 #!/bin/sh
-# build.sh: Claude to Marko Voice.app, swiftc straight, no Xcode, signed "Mantra Apps" (MANTRA_MANIFEST mac-app-signing.md).
+# build.sh: Voice Engine (Mantra).app (until v19 Claude to Marko Voice; v20 took in Voice of Claude), swiftc straight, no Xcode, signed "Mantra Apps" (MANTRA_MANIFEST mac-app-signing.md).
 set -e
 cd "$(dirname "$0")"
 V=$(sed -n 's/^let VERSION = \([0-9]*\)/\1/p' app/App.swift)
-APP="build/Claude to Marko Voice (Mantra).app"
+APP="build/Voice Engine (Mantra).app"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-swiftc -O -swift-version 5 -parse-as-library -o "$APP/Contents/MacOS/ClaudeToMarkoVoice" app/*.swift 2>&1 | grep -v "warning:" || true
-[ -x "$APP/Contents/MacOS/ClaudeToMarkoVoice" ] || { echo "the app did not build"; exit 1; }
+swiftc -O -swift-version 5 -parse-as-library -o "$APP/Contents/MacOS/VoiceEngine" app/*.swift 2>&1 | grep -v "warning:" || true
+[ -x "$APP/Contents/MacOS/VoiceEngine" ] || { echo "the app did not build"; exit 1; }
 cat > "$APP/Contents/Info.plist" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleName</key><string>Claude to Marko Voice (Mantra)</string>
-<key>CFBundleDisplayName</key><string>Claude to Marko voice (Mantra)</string>
+<key>CFBundleName</key><string>Voice Engine (Mantra)</string>
+<key>CFBundleDisplayName</key><string>Voice Engine (Mantra)</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
-<key>CFBundleIdentifier</key><string>community.auroville.claudetomarkovoice</string>
-<key>CFBundleExecutable</key><string>ClaudeToMarkoVoice</string>
+<key>CFBundleIdentifier</key><string>community.auroville.voiceengine</string>
+<key>CFBundleExecutable</key><string>VoiceEngine</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$V</string>
 <key>CFBundleVersion</key><string>$V</string>
