@@ -151,4 +151,4 @@ The first row as in MANTRA_MANIFEST swift-apps.md, "The first row of every app: 
 
 > The app is only not starting, I mean the reading is not starting if I'm reading to my voice to text application and to Speechify. If I'm sending audio to these two applications, you are pausing your answers through my voice engine. So we are just limiting to this. All other open applications which are recording, taking my sound, you need to ignore.
 
-**Status:** in work.
+**Status:** done 1.11.2026 (Voice Engine v21–v22 + MANTRA_VOICE): only Voice to Text (Mantra) and Speechify hold the voice, every other recorder ignored; while held, a notice under the blob says why ("WAITING: VOICE TO TEXT (MANTRA) IS RECORDING YOU", seen, the whole sentence) with READ ANYWAY; tested: held → playing at once, the next reading guarded again.

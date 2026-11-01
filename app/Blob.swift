@@ -221,6 +221,7 @@ final class Blob {
     func hide() {
         timer?.invalidate(); timer = nil
         panel?.orderOut(nil)
+        hideHeld()
     }
 
     // every answer of GET /speaking: shown while she reads, gone a moment after she has ended
@@ -231,12 +232,58 @@ final class Blob {
             pauseKey?.symbol = paused ? "play.fill" : "pause.fill"
             show()
             wave.moving = !paused && (st.pos ?? -1) >= 0
+            if let why = st.held, !why.isEmpty { showHeld(why) } else { hideHeld() }
         } else if panel?.isVisible == true {
+            hideHeld()
             quiet += 1
             wave.moving = false
             if quiet >= 3 { hide() }
         }
     }
+
+    // v21 (Marko, 1.11.2026: "if it stops ... inform me what is taking the sound ... Pause because of this and that ... And
+    // then I can skip it and the voice will read. It will not be blocked without being able for me to unblock it"): while
+    // the engine holds the reading (Voice to Text or Speechify listening to him), a notice under the blob says why, with
+    // READ ANYWAY (POST /micguard/skip): this reading plays, the next one waits again.
+    var note: NSPanel?
+    let noteText = NSTextField(labelWithString: "")
+    func showHeld(_ why: String) {
+        if note == nil {
+            let w: CGFloat = 460, h: CGFloat = 34
+            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: w, height: h), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+            p.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.overlayWindow)) + 1)
+            p.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+            p.isOpaque = false; p.backgroundColor = .clear; p.hasShadow = false; p.hidesOnDeactivate = false
+            let bg = NoteView(frame: NSRect(x: 0, y: 0, width: w, height: h))
+            noteText.frame = NSRect(x: 14, y: 9, width: w - 150, height: 16)
+            noteText.font = .monospacedSystemFont(ofSize: 11, weight: .semibold)
+            noteText.textColor = NSColor(calibratedRed: 0.91, green: 0.64, blue: 0.24, alpha: 1)
+            noteText.lineBreakMode = .byTruncatingTail
+            bg.addSubview(noteText)
+            let b = NoteButton(frame: NSRect(x: w - 128, y: 4, width: 120, height: 26)) { [weak self] in self?.readAnyway() }
+            b.setAccessibilityLabel("Read anyway"); b.setAccessibilityIdentifier("read-anyway"); b.setAccessibilityRole(.button)
+            bg.addSubview(b)
+            p.contentView = bg
+            note = p
+        }
+        noteText.stringValue = "WAITING: " + why.uppercased()
+        noteText.toolTip = "The voice waits while " + why + ". READ ANYWAY plays this reading now."
+        // never cut text (MANTRA_MANIFEST): the notice is as wide as its words plus the button
+        let tw = ceil(noteText.attributedStringValue.size().width) + 4
+        if let n = note, let bg = n.contentView, let b = bg.subviews.first(where: { $0 is NoteButton }) {
+            let w = tw + 14 + 12 + b.frame.width + 8
+            n.setContentSize(NSSize(width: w, height: n.frame.height)); bg.frame.size.width = w
+            noteText.frame = NSRect(x: 14, y: 9, width: tw, height: 16)
+            b.setFrameOrigin(NSPoint(x: w - b.frame.width - 4, y: 4))
+            bg.needsDisplay = true
+        }
+        if let f = panel?.frame, let n = note {
+            n.setFrameOrigin(NSPoint(x: f.midX - n.frame.width / 2, y: f.minY - n.frame.height - 4))
+        }
+        note?.orderFrontRegardless()
+    }
+    func hideHeld() { note?.orderOut(nil) }
+    func readAnyway() { postJSON("/micguard/skip", "{}"); hideHeld() }
 
     func cancel() { post("/speak/stop"); hide(); SubtitleEngine.shared.hide() }
     func top() { postJSON("/speak/top", "{}"); paused = false; pauseKey.symbol = "pause.fill"; SubtitleEngine.shared.follow() }
@@ -259,4 +306,33 @@ func postJSON(_ path: String, _ body: String) {
     var r = URLRequest(url: URL(string: VOICE_URL + path)!)
     r.httpMethod = "POST"; r.httpBody = Data(body.utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
     URLSession.shared.dataTask(with: r).resume()
+}
+
+// v21: the notice's dark pill and its READ ANYWAY button
+final class NoteView: NSView {
+    override func draw(_ r: NSRect) {
+        let p = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: bounds.height / 2, yRadius: bounds.height / 2)
+        NSColor(calibratedRed: 0.11, green: 0.11, blue: 0.12, alpha: 0.97).setFill(); p.fill()
+        NSColor(calibratedRed: 0.91, green: 0.64, blue: 0.24, alpha: 0.5).setStroke(); p.lineWidth = 1; p.stroke()
+    }
+}
+final class NoteButton: NSView {
+    let action: () -> Void
+    var over = false { didSet { needsDisplay = true } }
+    init(frame: NSRect, _ action: @escaping () -> Void) { self.action = action; super.init(frame: frame)
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self)) }
+    required init?(coder: NSCoder) { fatalError() }
+    override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
+    override func mouseEntered(with e: NSEvent) { over = true }
+    override func mouseExited(with e: NSEvent) { over = false }
+    override func mouseDown(with e: NSEvent) {}
+    override func mouseUp(with e: NSEvent) { if bounds.contains(convert(e.locationInWindow, from: nil)) { action() } }
+    override func accessibilityPerformPress() -> Bool { action(); return true }
+    override func draw(_ r: NSRect) {
+        let p = NSBezierPath(roundedRect: bounds, xRadius: bounds.height / 2, yRadius: bounds.height / 2)
+        (over ? NSColor(calibratedRed: 0.20, green: 0.82, blue: 0.48, alpha: 1) : BLUE).setFill(); p.fill()
+        let a: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .bold), .foregroundColor: NSColor.white]
+        let t = NSAttributedString(string: "READ ANYWAY", attributes: a)
+        t.draw(at: NSPoint(x: (bounds.width - t.size().width) / 2, y: (bounds.height - t.size().height) / 2))
+    }
 }

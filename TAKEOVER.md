@@ -29,3 +29,14 @@ TOP on the settings window ON / OFF row (`TopWord` in app/App.swift, `onTop`), A
   longer shown (it fed only subtitle_answer.py, out since 31.10.2026). A click on TOP / MIDDLE / BOTTOM sets `ypos` -1.
 - The old two apps are in the Trash; the star row `claudevoice` opens Voice Engine (STAR_SWIFT c138a55), the row
   `voiceofclaude` is gone; MANTRA_VOICE voiced.py BLOB_APP points at Voice Engine (takes effect at voiced's next start).
+
+## 1.11.2026, v21–v22: the held reading says why
+
+- Blob.swift `showHeld(why)` / `hideHeld()`: a second panel under the blob (NoteView, NoteButton "READ ANYWAY", AX id
+  `read-anyway`), as wide as its words (v22); fed by `/speaking`'s new `held` (Subtitle.swift `Speaking.held`).
+- MANTRA_VOICE: MicGuard.LISTENERS = voice to text, speechify (substring of the app name from micbusy's third column);
+  `why()`, `skip()` (READER.gen), POST /micguard/skip.
+- Test without his voice: write a live pid into ~/Library/Application Support/Voice to Text (Mantra)/take-open, POST a
+  short /speak, look, POST /micguard/skip, remove the file.
+- Found on the way: a second voiced.py (nohup, not launchd) held :8837, so a kickstart -k left the new code unused.
+  Check `pgrep -fl MANTRA_VOICE/voiced.py` shows ONE after any restart.

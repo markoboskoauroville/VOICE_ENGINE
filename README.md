@@ -18,6 +18,9 @@ The window, top to bottom:
   (dark ↔ light), BACKGROUND ON THE MAIN SCREEN, WHERE ON THE SCREEN (TOP / MIDDLE / BOTTOM, or WHERE YOU DRAGGED IT).
   The old words: "band" is the background, "big screen" the main screen.
 
+**When the voice waits** (v21–v22): only while Voice to Text (Mantra) records a take or Speechify listens to Marko; a notice
+under the blob says why ("WAITING: VOICE TO TEXT (MANTRA) IS RECORDING YOU") with READ ANYWAY, which plays this reading at once.
+
 The app also draws the subtitles and the blob while the voice reads (below); the star brings it back at login with
 `--login`, and MANTRA_VOICE's voiced.py opens it if a reading starts without it. Build: `./build.sh`.
 

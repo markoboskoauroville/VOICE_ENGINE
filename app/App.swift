@@ -6,6 +6,9 @@
 // the controls are named for what they do (SUBTITLES, BACKGROUND, MAIN SCREEN); "OFF, ANSWERS NOT READ" is gone (it fed
 // only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
 //
+// v22: the notice as wide as its words. v21 (1.11.2026): a held reading says why under the blob, with READ ANYWAY (Blob.swift showHeld); the engine holds
+// only for Voice to Text (Mantra) and Speechify listening to him (MANTRA_VOICE voiced.py MicGuard.LISTENERS).
+//
 // CLAUDE TO MARKO VOICE (until v19): the speaking subtitle and its settings.
 // Marko, 3.10.2026: "In the star menu you can call it Claude to Marko voice, and then I can adjust parameters of
 // this subtitle display"; "any settings are now Swift applications, and this is the rule."
@@ -20,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 20
+let VERSION = 22
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height

@@ -30,6 +30,7 @@ func nscolour(_ hex: String, _ alpha: CGFloat = 1) -> NSColor? {
 struct SubWord: Decodable { var s: Int?; var e: Int?; var t: Double?; var d: Double? }
 struct Speaking: Decodable {
     var on: Bool; var paused: Bool?; var phase: String?; var i: Int?; var n: Int?; var sentence: String?; var pos: Double?; var words: [SubWord]?
+    var held: String?        // v21: why the engine holds this reading ('' when it does not)
 }
 
 func post(_ path: String) {
