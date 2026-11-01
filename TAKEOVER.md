@@ -40,3 +40,10 @@ TOP on the settings window ON / OFF row (`TopWord` in app/App.swift, `onTop`), A
   short /speak, look, POST /micguard/skip, remove the file.
 - Found on the way: a second voiced.py (nohup, not launchd) held :8837, so a kickstart -k left the new code unused.
   Check `pgrep -fl MANTRA_VOICE/voiced.py` shows ONE after any restart.
+
+## 1.11.2026, evening: the old app was still running
+
+The old Claude to Marko Voice (pid 54605, in the Trash) ran from 13:04 beside Voice Engine (13:13): two subtitles and
+two blobs. It ignored `quit app id` (its bundle was gone) and was ended with kill. Voice Engine is now the only drawer:
+MANTRA_STAR's Lua subtitle is removed and voiced.py no longer calls Hammerspoon. After a rebuild or a rename check
+`pgrep -fl "ClaudeToMarkoVoice|VoiceEngine"` shows one.
