@@ -163,6 +163,7 @@ final class SubtitleEngine {
     var text = ""; var words: [SubWord] = []; var lit = -2
     var testTimer: Timer?; var lingerTimer: Timer?; var tick: Timer?
     var following = false; var polling = false
+    var pollSince = Date()   // v23 (2.11.2026): a poll that never answered left `polling` true for ever: no blob, no subtitle, no ✕
     var quiet = 0; var shownI = -1
     var dismissed = false; var dismissedN = -1      // clicked away: the voice goes on unseen until the next reading
     // MA Reader's clock: predicted between answers, eased toward each answer, snapped when far off
@@ -284,18 +285,18 @@ final class SubtitleEngine {
     // GET /speaking: five times a second while following, once a second while idle
     var idleCount = 0
     func pollOnce() {
-        if polling { return }
+        if polling && Date().timeIntervalSince(pollSince) < 3 { return }
         if !following { idleCount += 1; if idleCount < 5 { return } }
         idleCount = 0
         var r = URLRequest(url: URL(string: VOICE_URL + "/speaking")!); r.timeoutInterval = 1
-        polling = true
+        polling = true; pollSince = Date()
         URLSession.shared.dataTask(with: r) { d, _, _ in
             let st = d.flatMap { try? JSONDecoder().decode(Speaking.self, from: $0) }
             DispatchQueue.main.async { self.polling = false; if let st = st { self.heard(st) } }
         }.resume()
     }
     func heard(_ st: Speaking) {
-        Blob.shared.heard(st)
+        MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)
         if !following {
             // a reading began (or goes on after he clicked it away: then only a new reading brings it back)
             guard st.on else { dismissed = false; return }

@@ -57,3 +57,12 @@ v13: THE VOICE ENGINE, the window's first row, has ON / OFF: OFF stops the readi
 v14: ✕ at the far upper-right of the settings window and the Answer Claude box, as in every Mantra app (closes the window only).
 
 **v18 (31.10.2026): the subtitle is dragged, never lost.** Marko: *"I clicked on the subtitle itself and it disappeared. Then I clicked on the blob to bring back the subtitle and it didn't bring it back ... add a feature that I can click on the subtitle and pull it vertically only on the screen, wherever I want to, with my mouse while it's reading."* A drag on the band moves it up or down only (every screen follows, the cursor shows ↕), kept in `~/.config/subtitle.json` as `ypos` (fraction of the screen height, −1 = `position`). A click never hides it; a **double-click** opens the answer box (was a single click, which also hid the band). A click on the blob's body brings the subtitle back while she reads; CC brings it back when it was on but hidden.
+
+## The menu bar instead of the blob (v24–v26, 2.11.2026)
+Marko: *"Let's forget the blob. Make a triangle when you are playing at the menu bar ... one is square to stop completely
+and the triangle to pause"*, *"a third button ... 'Sub' ... by default, you are not showing me subtitles"*, *"The order is
+triangle, square, and then sub."* While the voice reads, the menu bar shows **▶ ■ SUB** (MenuControls.swift): ▶ pauses
+and plays on (orange while paused; while a reading is held by the microphone guard it is orange and reads anyway), ■ stops
+completely, SUB turns the subtitles on and off (filled orange while on; `subtitles` in ~/.config/subtitle.json, off by
+default since 2.11.2026). They go a moment after the reading ends. The blob no longer shows. v23: a GET /speaking poll that
+never answered is dropped after 3 s (the copy running since login had stopped showing anything).

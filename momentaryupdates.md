@@ -152,3 +152,11 @@ The first row as in MANTRA_MANIFEST swift-apps.md, "The first row of every app: 
 > The app is only not starting, I mean the reading is not starting if I'm reading to my voice to text application and to Speechify. If I'm sending audio to these two applications, you are pausing your answers through my voice engine. So we are just limiting to this. All other open applications which are recording, taking my sound, you need to ignore.
 
 **Status:** done 1.11.2026 (Voice Engine v21–v22 + MANTRA_VOICE): only Voice to Text (Mantra) and Speechify hold the voice, every other recorder ignored; while held, a notice under the blob says why ("WAITING: VOICE TO TEXT (MANTRA) IS RECORDING YOU", seen, the whole sentence) with READ ANYWAY; tested: held → playing at once, the next reading guarded again.
+
+## 2.11.2026, evening
+Marko: "Also, when you talk, I need Simple Blob to stop talking if I know what you're talking about. Now nothing is happening. You're just talking, and I have zero control."
+Found: the running copy (since login) had stopped polling GET /speaking: no blob, no subtitle. Relaunched: blob back. Fix: v23, a stuck poll is dropped after 3 s.
+Marko: "Better idea. Let's forget the blob. Make a triangle when you are playing at the. Menu bar and then I can just stop you. So you have stop, you make two buttons, one is square to stop completely and the triangle to pose."
+Marko: "Yes, continue building this one, and also add a third button which looks like a subtitle. Maybe in one square or rectangle you put \"Sub\", and when I click \"Sub\", I can see subtitles. But by default, you are not showing me subtitles."
+Marko: "The order is triangle, square, and then sub."
+**Status:** done v23–v26: ▶ ■ SUB in the menu bar, blob gone, subtitles off by default; tested by AX (pause, play, sub on/off, stop) and positions (▶ ■ SUB left to right)
