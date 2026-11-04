@@ -41,13 +41,9 @@ func closeSubtitle() {
     let done = DispatchSemaphore(value: 0)
     URLSession.shared.dataTask(with: r) { _, _, _ in done.signal() }.resume()
     _ = done.wait(timeout: .now() + 2)
-    // v8: the subtitle is drawn by Claude to Marko Voice (Mantra); this tells it to close. The hs line stays while the
-    // star's voice.lua may still draw it (until the switch-over), and does nothing after.
+    // v8: the subtitle is drawn by Voice Engine (Mantra); this tells it to close. (4.11.2026: the Hammerspoon line is gone,
+    // Marko: "stop Hammerspoon from running".)
     DistributedNotificationCenter.default().postNotificationName(Notification.Name("community.auroville.subtitle.hide"), object: nil, userInfo: nil, deliverImmediately: true)
-    let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/hs")
-    p.arguments = ["-t", "3", "-c", "if VOICEBUBBLE then VOICEBUBBLE.hide() end"]
-    try? p.run(); p.waitUntilExit()
 }
 
 final class Box: NSPanel, NSTextViewDelegate {
