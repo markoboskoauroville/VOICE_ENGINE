@@ -55,6 +55,13 @@ final class MenuControls: NSObject {
         stopItem = nil; playItem = nil          // SUB stays (v28)
     }
 
+    // v30: quitting the engine takes every item out, SUB too (it stays only while the engine runs)
+    func removeAll() {
+        remove()
+        if let u = subItem { NSStatusBar.system.removeStatusItem(u) }
+        subItem = nil
+    }
+
     // v28: drawn in real colours. Until v27 "on" was a BLACK filled box (not a template, so the system did not tint it):
     // on the dark menu bar it vanished, the bug Marko saw ("If I press Subtitle, then this icon ... disappears").
     // ON = an orange box with the word cut out; OFF = a template outline (white on a dark bar, black on a light one).

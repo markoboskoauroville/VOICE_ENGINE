@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 29
+let VERSION = 30
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -586,6 +586,7 @@ final class Delegate: NSObject, NSApplicationDelegate {
     }
     func applicationShouldHandleReopen(_ s: NSApplication, hasVisibleWindows: Bool) -> Bool { if !replying { openSettings() }; return true }
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { replying }
+    func applicationWillTerminate(_ n: Notification) { if !replying { MenuControls.shared.removeAll() } }
     func openSettings() {
         if model == nil { model = Model() }
         if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }

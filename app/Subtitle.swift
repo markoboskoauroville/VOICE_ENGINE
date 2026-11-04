@@ -33,6 +33,22 @@ struct Speaking: Decodable {
     var held: String?        // v21: why the engine holds this reading ('' when it does not)
 }
 
+// v30 (Marko, 4.11.2026: "When I press Stop ... the sub icon is left on the title bar. Everything should exit"; his v29
+// words: "Stop stops the talking completely. It exits the engine"). The subtitle's STOP ends the reading, waits for the
+// voice server's answer (1.5 s at most, post() alone was fire-and-forget), takes ▶ ■ SUB out of the menu bar and quits.
+func stopAndExit() {
+    var done = false
+    let finish = { DispatchQueue.main.async {
+        if done { return }; done = true
+        MenuControls.shared.removeAll()
+        NSApp.terminate(nil)
+    } }
+    var r = URLRequest(url: URL(string: VOICE_URL + "/speak/stop")!, timeoutInterval: 1.5)
+    r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    URLSession.shared.dataTask(with: r) { _, _, _ in finish() }.resume()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { finish() }
+}
+
 func post(_ path: String) {
     var r = URLRequest(url: URL(string: VOICE_URL + path)!)
     r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -127,7 +143,7 @@ final class ScreenSub {
         // on (the menu bar's SUB brings subtitles back). STOP (a square): the reading ends completely.
         let right: [(String, String, CGFloat, () -> Void)] = [
             ("HIDE", "captions.bubble.fill", 0, { [weak engine] in post("/speak/close"); engine?.hide() }),
-            ("STOP", "stop.fill", 70, { [weak engine] in post("/speak/stop"); engine?.hide() })]
+            ("STOP", "stop.fill", 70, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, x, f) in right { band.addSubview(KeyLabel(t, 30, NSRect(x: x, y: 0, width: 64, height: 64), symbol: sym, f)) }
     }
     var keyViews: [KeyLabel] { band.subviews.compactMap { $0 as? KeyLabel } }
