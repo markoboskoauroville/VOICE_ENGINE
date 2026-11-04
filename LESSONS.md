@@ -20,3 +20,8 @@ and the held peaks taken out again because he did not want them on so small a th
 - A dragged subtitle (`ypos` ≥ 0) silently beat the WHERE choice: the window said BOTTOM while the subtitle sat near the
   top. A setting that another gesture can override must show that ("WHERE YOU DRAGGED IT") and a click must win back.
 - Two apps for one engine confused Marko ("I have two voice engines"): one switch and its settings belong in one window.
+
+## 4.11.2026
+- A status-bar image that is not a template is NOT tinted by the system: a black "on" box vanished on the dark menu bar,
+  and contentTintColor did not colour the ▶ either. Draw real colours (orange fill, palette-coloured symbol) or use templates.
+- Check menu-bar items by CGWindowList (layer 25, IsOnscreen) and a screenshot crop; System Events sees no menu bar 2.

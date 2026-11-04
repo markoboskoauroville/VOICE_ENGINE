@@ -47,3 +47,11 @@ The old Claude to Marko Voice (pid 54605, in the Trash) ran from 13:04 beside Vo
 two blobs. It ignored `quit app id` (its bundle was gone) and was ended with kill. Voice Engine is now the only drawer:
 MANTRA_STAR's Lua subtitle is removed and voiced.py no longer calls Hammerspoon. After a rebuild or a rename check
 `pgrep -fl "ClaudeToMarkoVoice|VoiceEngine"` shows one.
+
+## 4.11.2026 (v27–v29)
+- v27: no Hammerspoon call in Answer Claude. v28: SUB is made at launch (`MenuControls.startSub`) and never removed;
+  ▶ ■ only while she reads. v29: the subtitle's keys are two SF Symbols on the right, HIDE (captions.bubble.fill,
+  /speak/close) and STOP (stop.fill, /speak/stop), Accessibility buttons; LW 24, KW 150; − + and PREVIOUS/NEXT/REPLAY gone.
+- Voice paths outside :8837 (no subtitle, no ▶ ■ SUB): Elevate Media Monitor pop-up reader, Ableton Teacher (afplay),
+  DaVinci Grading Tutorial, CQ MixPad Tutorial, Speechify Voice AI, the Nothing session. Marko's wish: one common way;
+  his decision pending (SESSIONS/2026-11-04.md in the hub).
