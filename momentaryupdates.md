@@ -176,3 +176,9 @@ Marko: "The order is triangle, square, and then sub."
 > please fix the bugs in my voice engine. In the subtitle, there is a stop button. When I press "Stop Engine Exit," the sub icon is left on the title bar. Everything should exit
 
 **Status (4.11.2026, v30):** the subtitle's STOP stops the reading, waits for the server (1.5 s at most), takes ▶ ■ SUB out of the menu bar and quits the engine; quitting any other way removes them too. Tested: test subtitle, Stop pressed by Accessibility, the process and SUB gone. The voice server (:8837) keeps running; the star's tick starts the engine again.
+
+## Request (4.11.2026, ~09:05 CT)
+
+> please fix my voice engine. Right now it's not running. When I press A, sub is not appearing, and I'm missing the pause button. One more button must be there. Let me check if this is going to post. It doesn't work. Posing doesn't work. Then play/pause must be a toggle. Please fix my voice engine control. Playback on the menu bar now
+
+**Status:** saved first.
