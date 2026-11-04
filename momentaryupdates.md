@@ -182,3 +182,5 @@ Marko: "The order is triangle, square, and then sub."
 > please fix my voice engine. Right now it's not running. When I press A, sub is not appearing, and I'm missing the pause button. One more button must be there. Let me check if this is going to post. It doesn't work. Posing doesn't work. Then play/pause must be a toggle. Please fix my voice engine control. Playback on the menu bar now
 
 **Status:** saved first.
+
+> (during the request above) there is another bug. Now you close the engine, and the sub icon is remaining. Put subtitles and the icon, and the whole thing, the whole engine which generates subtitles and reads everything, should be under one app. It doesn't show me the icon background app, same as my API for Star Menu. Please make this in Swift and make it efficient and working flawlessly. That's the rule now
