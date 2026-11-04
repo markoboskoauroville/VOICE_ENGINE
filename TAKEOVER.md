@@ -55,6 +55,10 @@ MANTRA_STAR's Lua subtitle is removed and voiced.py no longer calls Hammerspoon.
 - Voice paths outside :8837 (no subtitle, no ▶ ■ SUB): Elevate Media Monitor pop-up reader, Ableton Teacher (afplay),
   DaVinci Grading Tutorial, CQ MixPad Tutorial, Speechify Voice AI, the Nothing session. Marko's wish: one common way;
   his decision pending (SESSIONS/2026-11-04.md in the hub).
+- v30 (session claude-code, built 4.11.2026 just before the toggle and numbered v30 too): the subtitle's STOP is
+  `stopAndExit()` (Subtitle.swift): POST /speak/stop with a 1.5 s ceiling, `MenuControls.removeAll()` (▶ ■ SUB), then
+  NSApp.terminate; applicationWillTerminate removes the items as well. Tested by AXPress on the subtitle's Stop (label
+  "Stop", capitalised): process and SUB gone. Since v31 the quit also stops the voice server.
 - v30: the play button is a toggle (pause.fill white while playing, play.fill orange while paused/held).
 - v31 ONE APP: class Owner (App.swift) starts com.mantra.voiced at launch, stops it in applicationWillTerminate (Switch.stopNow),
   quits the app 8 s after the server is gone. LSUIElement. voicectl start/stop open/quit the app. PARTS patterns and

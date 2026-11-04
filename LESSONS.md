@@ -28,3 +28,8 @@ and the held peaks taken out again because he did not want them on so small a th
 - `pkill -f 'MANTRA_VOICE/voiced.py'` killed my own test shell (its command line contained the text): anchor process
   patterns on the interpreter path. The same loose pattern made `alive()` report a server that was not running.
 - A quitting app that stops its server first takes ~10 s; a start during that time must wait for the old app to go.
+
+- (4.11.2026) A key named STOP that only stops the reading leaves the engine's menu-bar items behind; Marko meant "exits
+the engine". Read the request's own words (momentaryupdates) for what a key must end. The subtitle keys' AX labels are
+capitalised ("Stop"): match case-insensitively in tests. Two sessions both numbered their change v30 the same morning;
+pull and read the latest VERSION before choosing a number.
