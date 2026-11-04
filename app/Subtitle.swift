@@ -16,8 +16,8 @@ import AppKit
 
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
-let KW: CGFloat = 430            // the right keys' width
-let LW: CGFloat = 150            // the left keys' width
+let KW: CGFloat = 150            // the right keys' width (v29: two symbols, HIDE and STOP)
+let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
 let HIDE_NOTE = "community.auroville.subtitle.hide"     // the answer box says: the subtitle closes
 
@@ -43,14 +43,25 @@ func post(_ path: String) {
 
 final class KeyLabel: NSView {
     let text: String; let size: CGFloat; let action: () -> Void
-    init(_ text: String, _ size: CGFloat, _ frame: NSRect, _ action: @escaping () -> Void) {
-        self.text = text; self.size = size; self.action = action; super.init(frame: frame)
+    var symbol: String?          // v29: an SF Symbol (Apple's symbol font) instead of the word; the word stays its name
+    init(_ text: String, _ size: CGFloat, _ frame: NSRect, symbol: String? = nil, _ action: @escaping () -> Void) {
+        self.text = text; self.size = size; self.action = action; self.symbol = symbol; super.init(frame: frame)
+        toolTip = text.capitalized
+        setAccessibilityElement(true); setAccessibilityRole(.button); setAccessibilityLabel(text.capitalized)
     }
+    override func accessibilityPerformPress() -> Bool { action(); return true }
     required init?(coder: NSCoder) { fatalError() }
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
     override func mouseDown(with e: NSEvent) {}
     override func mouseUp(with e: NSEvent) { action() }
     override func draw(_ r: NSRect) {
+        if let name = symbol, let base = NSImage(systemSymbolName: name, accessibilityDescription: text) {
+            let cfg = NSImage.SymbolConfiguration(pointSize: size, weight: .regular).applying(.init(paletteColors: [NSColor(white: 0.92, alpha: 0.9)]))
+            let img = base.withSymbolConfiguration(cfg) ?? base
+            let sz = img.size
+            img.draw(in: NSRect(x: (bounds.width - sz.width) / 2, y: (bounds.height - sz.height) / 2, width: sz.width, height: sz.height))
+            return
+        }
         let p = NSMutableParagraphStyle(); p.alignment = .center
         let a: [NSAttributedString.Key: Any] = [.font: NSFont(name: FONT, size: size) ?? .systemFont(ofSize: size),
                                                 .foregroundColor: NSColor(white: 0.92, alpha: 0.9), .paragraphStyle: p]
@@ -110,16 +121,14 @@ final class ScreenSub {
         band.onClick = { [weak engine] in engine?.answer() }
         band.onDrag = { [weak engine, weak self] y in if let s = self { engine?.dragTo(y, on: s) } }
         band.onDragEnd = { [weak engine] in engine?.dragDone() }
-        let left: [(String, CGFloat, () -> Void)] = [("−", 0, { [weak engine] in engine?.resize(-0.5) }),
-                                                      ("+", 76, { [weak engine] in engine?.resize(0.5) })]
-        for (t, x, f) in left { band.addSubview(KeyLabel(t, 52, NSRect(x: 12 + x, y: 0, width: 70, height: 70), f)) }
-        // Marko: "add an action button replay ... the whole message"; "put the word close because this is the closing subtitle"
-        let right: [(String, CGFloat, CGFloat, () -> Void)] = [
-            ("PREVIOUS", 0, 130, { [weak engine] in post("/speak/prev"); engine?.follow() }),
-            ("NEXT", 130, 100, { [weak engine] in post("/speak/next"); engine?.follow() }),
-            ("REPLAY", 230, 100, { [weak engine] in post("/speak/replay"); engine?.follow() }),
-            ("CLOSE", 330, 100, { [weak engine] in post("/speak/close"); engine?.hide() })]
-        for (t, x, w, f) in right { band.addSubview(KeyLabel(t, 17, NSRect(x: x, y: 0, width: w, height: 44), f)) }
+        // v29 (Marko, 4.11.2026: "Hide hides the subtitle, so I don't need to reach for the menu bar. Stop stops the talking
+        // completely ... These two controls I need on the right side. All other controls can just disappear ... They can
+        // also be symbolic"): two SF Symbols on the right. HIDE (captions crossed out): the subtitle goes, the voice reads
+        // on (the menu bar's SUB brings subtitles back). STOP (a square): the reading ends completely.
+        let right: [(String, String, CGFloat, () -> Void)] = [
+            ("HIDE", "captions.bubble.fill", 0, { [weak engine] in post("/speak/close"); engine?.hide() }),
+            ("STOP", "stop.fill", 70, { [weak engine] in post("/speak/stop"); engine?.hide() })]
+        for (t, sym, x, f) in right { band.addSubview(KeyLabel(t, 30, NSRect(x: x, y: 0, width: 64, height: 64), symbol: sym, f)) }
     }
     var keyViews: [KeyLabel] { band.subviews.compactMap { $0 as? KeyLabel } }
 
@@ -141,8 +150,7 @@ final class ScreenSub {
         band.fill = NSColor(white: CGFloat(c.grey) / 100, alpha: alpha)
         band.textRect = NSRect(x: LW + 24, y: max(4, (h - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
-        for k in keys.prefix(2) { k.frame.origin.y = (h - 70) / 2 }
-        for k in keys.dropFirst(2) { k.frame.origin.y = (h - 44) / 2 }       // x: SubtitleEngine.placeKeys
+        for k in keys { k.frame.origin.y = (h - 64) / 2 }                  // x: SubtitleEngine.placeKeys
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
@@ -181,8 +189,8 @@ final class SubtitleEngine {
     // the right keys are laid at the screen's right edge, the left ones at its left
     func placeKeys(_ s: ScreenSub) {
         let w = s.screen.visibleFrame.width, keys = s.keyViews
-        let xs: [CGFloat] = [0, 130, 230, 330]
-        for (i, k) in keys.dropFirst(2).enumerated() { k.frame.origin.x = w - KW - 12 + xs[i] }
+        let xs: [CGFloat] = [0, 70]
+        for (i, k) in keys.enumerated() where i < xs.count { k.frame.origin.x = w - KW - 12 + xs[i] }
     }
 
     func open() {

@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 27
+let VERSION = 29
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -576,6 +576,7 @@ final class Delegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ n: Notification) {
         if replying { open(NSHostingController(rootView: Reply(said: said)), "Answer Claude (Mantra)"); return }
         SubtitleEngine.shared.start()
+        MenuControls.shared.startSub()          // v28: SUB always in the menu bar
         // `--test-subtitle "text"`: the subtitle shows that text for 8 s (a check without a reading)
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "--test-subtitle") { SubtitleEngine.shared.test(i + 1 < a.count ? a[i + 1] : "Marko, this is a test of the subtitle.", 8); return }
