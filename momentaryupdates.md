@@ -160,3 +160,9 @@ Marko: "Better idea. Let's forget the blob. Make a triangle when you are playing
 Marko: "Yes, continue building this one, and also add a third button which looks like a subtitle. Maybe in one square or rectangle you put \"Sub\", and when I click \"Sub\", I can see subtitles. But by default, you are not showing me subtitles."
 Marko: "The order is triangle, square, and then sub."
 **Status:** done v23–v26: ▶ ■ SUB in the menu bar, blob gone, subtitles off by default; tested by AX (pause, play, sub on/off, stop) and positions (▶ ■ SUB left to right)
+
+## Request (4.11.2026, ~08:25 CT, Mac session in MPA)
+
+> enough of upgrading for today. We stop here. Hammerspoon needs to be still running. Only one fix you need to do in my voice engine. There is a control of subtitle which is coming at the menu bar, but actually it is not coming. And there is a bug. Sometimes it comes. If I press Subtitle, then this icon for controlling Subtitle disappears. So it's very buggy. I want to switch it on/off like a display switch: Subtitles on/off, and the icon is always there to invite Subtitles. Please check if any application is using a different voice engine. If they have multiple voice paths, sometimes I can hear the voice without subtitles and without controls on the menu bar. I'm not sure if that's the case. Please check. If there are any other ways to talk with me, are there any other ways? What do you need to do to delete them? Only one way should be common
+
+**Status:** saved first.
