@@ -15,6 +15,7 @@ cat > "$APP/Contents/Info.plist" <<PL
 <key>CFBundleDisplayName</key><string>Voice Engine (Mantra)</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIdentifier</key><string>community.auroville.voiceengine</string>
+<key>LSUIElement</key><true/>
 <key>CFBundleExecutable</key><string>VoiceEngine</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$V</string>

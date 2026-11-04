@@ -25,3 +25,6 @@ and the held peaks taken out again because he did not want them on so small a th
 - A status-bar image that is not a template is NOT tinted by the system: a black "on" box vanished on the dark menu bar,
   and contentTintColor did not colour the ▶ either. Draw real colours (orange fill, palette-coloured symbol) or use templates.
 - Check menu-bar items by CGWindowList (layer 25, IsOnscreen) and a screenshot crop; System Events sees no menu bar 2.
+- `pkill -f 'MANTRA_VOICE/voiced.py'` killed my own test shell (its command line contained the text): anchor process
+  patterns on the interpreter path. The same loose pattern made `alive()` report a server that was not running.
+- A quitting app that stops its server first takes ~10 s; a start during that time must wait for the old app to go.

@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 30
+let VERSION = 31
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -236,9 +236,9 @@ func alive(_ pattern: String) -> Bool { sh("/usr/bin/pgrep -f '\(pattern)' >/dev
 
 struct Part: Identifiable { let id: String; let what: String; let pattern: String }
 let PARTS = [
-    Part(id: "SPEAKING SERVER", what: "the door every app talks to, 127.0.0.1:8837", pattern: "MANTRA_VOICE/voiced.py"),
-    Part(id: "LISTENING", what: "Whisper, speech to text; wakes when asked", pattern: "MANTRA_VOICE/ears.py serve"),
-    Part(id: "CLONED VOICE", what: "the voice model on the Mac; wakes when asked", pattern: "MANTRA_VOICE/clone.py serve"),
+    Part(id: "SPEAKING SERVER", what: "the door every app talks to, 127.0.0.1:8837", pattern: "^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/voiced[.]py"),
+    Part(id: "LISTENING", what: "Whisper, speech to text; wakes when asked", pattern: "^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/ears[.]py serve"),
+    Part(id: "CLONED VOICE", what: "the voice model on the Mac; wakes when asked", pattern: "^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/clone[.]py serve"),
 ]
 
 final class Switch: ObservableObject {
@@ -270,10 +270,11 @@ final class Switch: ObservableObject {
     }
     static func stopNow() {
         sh("launchctl disable gui/\(getuid())/\(AGENT)")
-        sh("/usr/bin/pkill -f 'MANTRA_VOICE/voiced.py'")
+        // v31: anchored on the python binary, so a shell or a session whose command line only MENTIONS voiced.py is never hit
+        sh("/usr/bin/pkill -f '^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/voiced[.]py'")
         sh("'\(PYTHON)' '\(VOICE_DIR)/clone.py' stop; '\(PYTHON)' '\(VOICE_DIR)/ears.py' stop")
         for _ in 0..<20 where PARTS.contains(where: { alive($0.pattern) }) { usleep(250_000) }
-        sh("/usr/bin/pkill -f 'MANTRA_VOICE/(ears|clone).py serve'")
+        sh("/usr/bin/pkill -f '^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/(ears|clone)[.]py serve'")
     }
 }
 
@@ -579,14 +580,19 @@ final class Delegate: NSObject, NSApplicationDelegate {
         MenuControls.shared.startSub()          // v28: SUB always in the menu bar
         // `--test-subtitle "text"`: the subtitle shows that text for 8 s (a check without a reading)
         let a = CommandLine.arguments
-        if let i = a.firstIndex(of: "--test-subtitle") { SubtitleEngine.shared.test(i + 1 < a.count ? a[i + 1] : "Marko, this is a test of the subtitle.", 8); return }
+        if let i = a.firstIndex(of: "--test-subtitle") { Owner.shared.testing = true; SubtitleEngine.shared.test(i + 1 < a.count ? a[i + 1] : "Marko, this is a test of the subtitle.", 8); return }
+        Owner.shared.begin()                    // v31: this app IS the engine: the voice comes and goes with it
         // v9 (18.10.2026): brought back by the star at login (--login), the subtitle runs and the window waits
         if a.contains("--login") { return }
         openSettings()
     }
     func applicationShouldHandleReopen(_ s: NSApplication, hasVisibleWindows: Bool) -> Bool { if !replying { openSettings() }; return true }
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { replying }
-    func applicationWillTerminate(_ n: Notification) { if !replying { MenuControls.shared.removeAll() } }
+    func applicationWillTerminate(_ n: Notification) {
+        guard !replying else { return }
+        MenuControls.shared.removeAll()
+        if !Owner.shared.testing { Switch.stopNow() }   // v31: quitting the app quits the voice
+    }
     func openSettings() {
         if model == nil { model = Model() }
         if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
@@ -597,6 +603,30 @@ final class Delegate: NSObject, NSApplicationDelegate {
         w.title = title; w.styleMask = [.titled, .closable, .miniaturizable]; w.isReleasedWhenClosed = false
         w.center(); w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
         window = w
+    }
+}
+
+// v31 ONE APP (Marko, 4.11.2026: "Now you close the engine, and the sub icon is remaining ... the whole engine which
+// generates subtitles and reads everything, should be under one app ... background app, same as my API for Star Menu").
+// The app owns the voice server (launchd com.mantra.voiced, Python: the voice models live there): it starts it when the
+// app starts, stops it when the app quits, and when the server is stopped from outside (voicectl stop, the ON/OFF
+// switch, a crash) the app quits too, so no icon is ever left without a voice behind it. voicectl start opens the app.
+final class Owner {
+    static let shared = Owner()
+    var testing = false
+    private var seenUp = false, down = 0
+    private let q = DispatchQueue(label: "owner")
+    func begin() {
+        q.async { if !alive(PARTS[0].pattern) { Switch.startNow() } }
+        Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            self?.q.async {
+                guard let self = self else { return }
+                if alive(PARTS[0].pattern) { self.seenUp = true; self.down = 0; return }
+                guard self.seenUp else { return }
+                self.down += 1
+                if self.down >= 4 { DispatchQueue.main.async { NSApp.terminate(nil) } }   // 8 s gone: the engine closed
+            }
+        }
     }
 }
 

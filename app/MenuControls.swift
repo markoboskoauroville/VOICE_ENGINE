@@ -10,6 +10,7 @@ final class MenuControls: NSObject {
     static let shared = MenuControls()
     var stopItem: NSStatusItem?, playItem: NSStatusItem?, subItem: NSStatusItem?
     var paused = false, held = "", quiet = 0
+    var clickedAt = Date.distantPast      // v30: a click wins over the next poll for 1.5 s (no flicker back)
 
     private func symbol(_ name: String, _ desc: String) -> NSImage? {
         let img = NSImage(systemSymbolName: name, accessibilityDescription: desc)
@@ -42,7 +43,7 @@ final class MenuControls: NSObject {
         s.button?.target = self; s.button?.action = #selector(stop)
         s.button?.setAccessibilityLabel("STOP")
         let p = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        p.button?.image = symbol("play.fill", "PAUSE")
+        p.button?.image = symbol("pause.fill", "PAUSE")
         p.button?.target = self; p.button?.action = #selector(play)
         p.button?.setAccessibilityLabel("PAUSE")
         stopItem = s; playItem = p
@@ -81,9 +82,10 @@ final class MenuControls: NSObject {
         return img
     }
 
-    // ▶ in orange (paused, or held while he dictates) as a real colour image; the tint alone did not show in the bar
+    // v30 (Marko, 4.11.2026: "I'm missing the pause button ... play/pause must be a toggle"): one button, two faces.
+    // Playing: ⏸ (white, template); a click pauses. Paused or held: ▶ in orange; a click plays on (or reads anyway).
     private func playImage(_ orange: Bool) -> NSImage? {
-        guard orange else { return symbol("play.fill", "PAUSE") }
+        guard orange else { return symbol("pause.fill", "PAUSE") }
         let cfg = NSImage.SymbolConfiguration(paletteColors: [NSColor.systemOrange])
         let img = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "PLAY")?.withSymbolConfiguration(cfg)
         img?.isTemplate = false
@@ -111,7 +113,7 @@ final class MenuControls: NSObject {
         startSub()
         if st.on || !(st.held ?? "").isEmpty {
             quiet = 0
-            paused = st.paused ?? false
+            if Date().timeIntervalSince(clickedAt) > 1.5 { paused = st.paused ?? false }
             held = st.held ?? ""
             make(); paint()
         } else if stopItem != nil {
@@ -134,7 +136,7 @@ final class MenuControls: NSObject {
 
     @objc func play() {
         if !held.isEmpty { postJSON("/micguard/skip", "{}"); held = ""; paint(); return }
-        paused.toggle()
+        paused.toggle(); clickedAt = Date()
         postJSON("/speak/pause", paused ? "{\"paused\": true}" : "{\"paused\": false}")
         paint()
     }

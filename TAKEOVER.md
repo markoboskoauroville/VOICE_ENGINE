@@ -55,3 +55,8 @@ MANTRA_STAR's Lua subtitle is removed and voiced.py no longer calls Hammerspoon.
 - Voice paths outside :8837 (no subtitle, no ▶ ■ SUB): Elevate Media Monitor pop-up reader, Ableton Teacher (afplay),
   DaVinci Grading Tutorial, CQ MixPad Tutorial, Speechify Voice AI, the Nothing session. Marko's wish: one common way;
   his decision pending (SESSIONS/2026-11-04.md in the hub).
+- v30: the play button is a toggle (pause.fill white while playing, play.fill orange while paused/held).
+- v31 ONE APP: class Owner (App.swift) starts com.mantra.voiced at launch, stops it in applicationWillTerminate (Switch.stopNow),
+  quits the app 8 s after the server is gone. LSUIElement. voicectl start/stop open/quit the app. PARTS patterns and
+  pkill are anchored `^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/...` (never a shell that mentions the file).
+  Test clicks: a CGEvent click tool (Macro Recorder's `macro do Click` hung on the menu bar); window checks by CGWindowList.
