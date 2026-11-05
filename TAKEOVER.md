@@ -1,5 +1,10 @@
 # TAKEOVER
 
+**State 5.11.2026: v32** (first GitHub Actions build): SUB comes and goes with ▶ ■ (Marko: "The play and stop buttons
+should be gone at the same time"); measured: 3 menu-bar items while reading, 0 after. Install = download release
+app.zip, replace /Applications/Voice Engine (Mantra).app, sign "Mantra Apps", `voicectl stop` / `voicectl start`.
+
+
 **State (3.10.2026):** v3 (linger 0 = forever, the default: the subtitle stays until a click on its text). The window writes `~/.config/subtitle.json`
 (`size colour bold word wordbg offset band grey position linger`); the subtitle in MANTRA_STAR `apps/voice.lua`
 reads it at each reading and at each preview. The word timings come from MANTRA_VOICE `GET /speaking`
