@@ -73,6 +73,8 @@ struct PermissionsWord: View {
         .onReceive(tick) { _ in ok = HotKeys.allowed }
     }
     static func open() {
+        // v34: ask macOS once, so Voice Engine (Mantra) is already in the Accessibility list; Marko only switches it on
+        _ = AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 }
