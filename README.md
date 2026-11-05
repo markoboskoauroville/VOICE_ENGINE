@@ -18,6 +18,9 @@ The window, top to bottom:
   (dark ↔ light), BACKGROUND ON THE MAIN SCREEN, WHERE ON THE SCREEN (TOP / MIDDLE / BOTTOM, or WHERE YOU DRAGGED IT).
   The old words: "band" is the background, "big screen" the main screen.
 
+**Keys while the voice reads** (v33, 5.11.2026): Esc stops the reading, Space pauses / plays on, S shows / hides the
+subtitles, in any app, only while ▶ ■ SUB stand in the menu bar (Accessibility; PERMISSIONS in the first row while missing).
+
 **When the voice waits** (v21–v22): only while Voice to Text (Mantra) records a take or Speechify listens to Marko; a notice
 under the blob says why ("WAITING: VOICE TO TEXT (MANTRA) IS RECORDING YOU") with READ ANYWAY, which plays this reading at once.
 
