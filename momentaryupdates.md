@@ -191,3 +191,4 @@ Marko: "The order is triangle, square, and then sub."
 
 "please debug my voice engine on this. The part on the menu bar after playing is finished: the sub icon is staying. The sub icon is part of the play and stop buttons. The play and stop buttons should be gone at the same time"
 **Status:** saved first. (Replaces v28's "SUB always there": SUB now comes and goes with ▶ ■.)
+**Status (5.11.2026, ~12:20):** v32 built by GitHub (first workflow run), installed, running. Measured: while reading ▶ ■ SUB stand in the menu bar (both screens); after the reading 0 items.
