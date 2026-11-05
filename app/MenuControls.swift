@@ -47,6 +47,7 @@ final class MenuControls: NSObject {
         p.button?.target = self; p.button?.action = #selector(play)
         p.button?.setAccessibilityLabel("PAUSE")
         stopItem = s; playItem = p
+        HotKeys.shared.on()      // v33: Esc / Space / S while she reads
         paint()
     }
 
@@ -57,6 +58,7 @@ final class MenuControls: NSObject {
         if let p = playItem { NSStatusBar.system.removeStatusItem(p) }
         if let u = subItem { NSStatusBar.system.removeStatusItem(u) }
         stopItem = nil; playItem = nil; subItem = nil
+        HotKeys.shared.off()
     }
 
     // v30: quitting the engine takes every item out
@@ -113,7 +115,7 @@ final class MenuControls: NSObject {
             quiet = 0
             if Date().timeIntervalSince(clickedAt) > 1.5 { paused = st.paused ?? false }
             held = st.held ?? ""
-            make(); paint()
+            make(); HotKeys.shared.on(); paint()   // v33: also catches Accessibility granted mid-reading
         } else if stopItem != nil || subItem != nil {
             quiet += 1
             if quiet >= 3 { remove() }

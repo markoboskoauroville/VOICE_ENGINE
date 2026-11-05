@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 32
+let VERSION = 33
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -294,6 +294,7 @@ struct SwitchRow: View {
                 }
                 Text("VOICE ENGINE").font(.system(size: 15, weight: .bold, design: .monospaced)).foregroundColor(SAND).padding(.leading, 12)
                 Spacer()
+                PermissionsWord()
                 TopWord()
                 CloseX()
             }
