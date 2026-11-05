@@ -192,3 +192,9 @@ Marko: "The order is triangle, square, and then sub."
 "please debug my voice engine on this. The part on the menu bar after playing is finished: the sub icon is staying. The sub icon is part of the play and stop buttons. The play and stop buttons should be gone at the same time"
 **Status:** saved first. (Replaces v28's "SUB always there": SUB now comes and goes with ▶ ■.)
 **Status (5.11.2026, ~12:20):** v32 built by GitHub (first workflow run), installed, running. Measured: while reading ▶ ■ SUB stand in the menu bar (both screens); after the reading 0 items.
+
+## 5.11.2026 (~16:40)
+
+> activate the shortcut while the voice engine is running. I can simply press Escape at that moment to stop it, and I can press the spacebar to pause it, and I can press the S key on the keyboard to show or hide subtitles. Simple as that
+
+**Status:** saved first.
