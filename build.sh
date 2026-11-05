@@ -25,7 +25,7 @@ cat > "$APP/Contents/Info.plist" <<PL
 </dict></plist>
 PL
 mkdir -p "$APP/Contents/Resources"; cp icon/subtitle.icns "$APP/Contents/Resources/AppIcon.icns"
-codesign --force -s "Mantra Apps" "$APP"
+codesign --force -s "${SIGN:-Mantra Apps}" "$APP"
 # the answer box, its own small AppKit app (the SwiftUI scene never opened a window when launched by a click)
 A="build/Answer Claude (Mantra).app"; rm -rf "$A"; mkdir -p "$A/Contents/MacOS"
 swiftc -O reply/main.swift -o "$A/Contents/MacOS/AnswerClaude" 2>&1 | grep -v "warning:" || true
@@ -44,7 +44,8 @@ cat > "$A/Contents/Info.plist" <<PL
 </dict></plist>
 PL
 mkdir -p "$A/Contents/Resources"; cp icon/answer.icns "$A/Contents/Resources/AppIcon.icns"
-codesign --force -s "Mantra Apps" "$A"
+codesign --force -s "${SIGN:-Mantra Apps}" "$A"
+[ -n "$NO_INSTALL" ] && { echo "built $APP (v$V) and $A"; exit 0; }
 # MANTRA_MANIFEST swift-apps.md: both live in /Applications, their names ending in "(Mantra)"
 for x in "$APP" "$A"; do rm -rf "/Applications/$(basename "$x")"; cp -R "$x" /Applications/; done
 echo "built $APP (v$V) and $A, installed in /Applications"

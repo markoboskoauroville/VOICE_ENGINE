@@ -19,8 +19,8 @@ final class MenuControls: NSObject {
     }
 
     // v28 (Marko, 4.11.2026: "I want to switch it on/off like a display switch: Subtitles on/off, and the icon is always
-    // there"): SUB stands in the menu bar from the engine's start until it quits, never removed; a click switches the
-    // subtitles on (filled, orange) or off (outlined). Only ▶ ■ come and go with the reading, to the left of SUB.
+    // there"): a click switches the subtitles on (filled, orange) or off (outlined). Since v32 SUB comes and goes with
+    // ▶ ■ (Marko, 5.11.2026), standing to their right while a reading plays.
     func startSub() {
         if subItem != nil { return }
         let u = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -50,18 +50,17 @@ final class MenuControls: NSObject {
         paint()
     }
 
+    // v32 (Marko, 5.11.2026: "The sub icon is part of the play and stop buttons. The play and stop buttons should be gone
+    // at the same time"): SUB comes with ▶ ■ when a reading starts and goes with them when it ends (v28 kept it always)
     private func remove() {
         if let s = stopItem { NSStatusBar.system.removeStatusItem(s) }
         if let p = playItem { NSStatusBar.system.removeStatusItem(p) }
-        stopItem = nil; playItem = nil          // SUB stays (v28)
+        if let u = subItem { NSStatusBar.system.removeStatusItem(u) }
+        stopItem = nil; playItem = nil; subItem = nil
     }
 
-    // v30: quitting the engine takes every item out, SUB too (it stays only while the engine runs)
-    func removeAll() {
-        remove()
-        if let u = subItem { NSStatusBar.system.removeStatusItem(u) }
-        subItem = nil
-    }
+    // v30: quitting the engine takes every item out
+    func removeAll() { remove() }
 
     // v28: drawn in real colours. Until v27 "on" was a BLACK filled box (not a template, so the system did not tint it):
     // on the dark menu bar it vanished, the bug Marko saw ("If I press Subtitle, then this icon ... disappears").
@@ -110,13 +109,12 @@ final class MenuControls: NSObject {
 
     // every answer of GET /speaking (SubtitleEngine's poll)
     func heard(_ st: Speaking) {
-        startSub()
         if st.on || !(st.held ?? "").isEmpty {
             quiet = 0
             if Date().timeIntervalSince(clickedAt) > 1.5 { paused = st.paused ?? false }
             held = st.held ?? ""
             make(); paint()
-        } else if stopItem != nil {
+        } else if stopItem != nil || subItem != nil {
             quiet += 1
             if quiet >= 3 { remove() }
         }
