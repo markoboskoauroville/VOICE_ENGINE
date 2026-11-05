@@ -69,3 +69,9 @@ MANTRA_STAR's Lua subtitle is removed and voiced.py no longer calls Hammerspoon.
   quits the app 8 s after the server is gone. LSUIElement. voicectl start/stop open/quit the app. PARTS patterns and
   pkill are anchored `^/[^ ]*python3[.0-9]* /[^ ]*/MANTRA_VOICE/...` (never a shell that mentions the file).
   Test clicks: a CGEvent click tool (Macro Recorder's `macro do Click` hung on the menu bar); window checks by CGWindowList.
+
+## 5.11.2026: v33–v34, keys while she reads
+app/HotKeys.swift: a session CGEventTap, live only while ▶ ■ SUB stand (MenuControls make/remove; re-tried every poll).
+Esc 53 → stop, Space 49 → pause/play, S 1 → SUB; taken only bare (no ⌘⌥⌃⇧, no repeats). Needs Accessibility:
+PERMISSIONS (amber, first row) calls AXIsProcessTrustedWithOptions(prompt) and opens the Settings page (v34). Granted by
+Marko 5.11.2026 17:02; the app needed one restart before AXIsProcessTrusted turned true. Tested with real key codes.

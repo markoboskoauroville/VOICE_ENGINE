@@ -33,3 +33,10 @@ and the held peaks taken out again because he did not want them on so small a th
 the engine". Read the request's own words (momentaryupdates) for what a key must end. The subtitle keys' AX labels are
 capitalised ("Stop"): match case-insensitively in tests. Two sessions both numbered their change v30 the same morning;
 pull and read the latest VERSION before choosing a number.
+
+## 5.11.2026
+- Accessibility granted while the app runs: AXIsProcessTrusted can stay false until the app restarts. Check TCC
+  (/Library/Application Support/com.apple.TCC/TCC.db, auth_value 2) and restart the app before calling it broken.
+- Macro Recorder `Send "s"` types the character with key code 0, so it cannot test a key-code hotkey. Post the real code
+  with Quartz (CGEventCreateKeyboardEvent, HID tap) from the pyenv python.
+- GitHub's macOS runners can queue 15 min and fail without building ("capacity constraints"): `gh run rerun`.
