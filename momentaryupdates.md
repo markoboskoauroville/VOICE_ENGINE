@@ -186,3 +186,8 @@ Marko: "The order is triangle, square, and then sub."
 > (during the request above) there is another bug. Now you close the engine, and the sub icon is remaining. Put subtitles and the icon, and the whole thing, the whole engine which generates subtitles and reads everything, should be under one app. It doesn't show me the icon background app, same as my API for Star Menu. Please make this in Swift and make it efficient and working flawlessly. That's the rule now
 
 **Status (4.11.2026 ~08:40 CT, v30–v31):** ⏯ is one toggle: ⏸ (white) while she plays, ▶ (orange) while paused; a click wins over the next poll for 1.5 s. One app: Voice Engine (Mantra) owns the voice server (opening it starts the server, quitting it stops the server and every icon; the server stopped from outside → the app quits within 8 s); LSUIElement, no Dock icon, like Star API; `voicectl start` opens the app, `voicectl stop` quits it. Process patterns anchored on the python binary (the old `pkill -f 'MANTRA_VOICE/voiced.py'` also killed any shell that only mentioned it). Tested with real clicks: SUB six times during a reading (on = the subtitle on both screens, off = hidden, the voice reading on), ⏸ → ▶ (position held) → ⏸ (reading on); lifecycle: start, quit, start right after quit, stop, start. The voice models themselves stay Python inside the server (Qwen/Beatrice/Speechify code); the app is their one door and one life.
+
+## 5.11.2026
+
+"please debug my voice engine on this. The part on the menu bar after playing is finished: the sub icon is staying. The sub icon is part of the play and stop buttons. The play and stop buttons should be gone at the same time"
+**Status:** saved first. (Replaces v28's "SUB always there": SUB now comes and goes with ▶ ■.)
