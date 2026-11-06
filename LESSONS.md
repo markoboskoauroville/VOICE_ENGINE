@@ -40,3 +40,8 @@ pull and read the latest VERSION before choosing a number.
 - Macro Recorder `Send "s"` types the character with key code 0, so it cannot test a key-code hotkey. Post the real code
   with Quartz (CGEventCreateKeyboardEvent, HID tap) from the pyenv python.
 - GitHub's macOS runners can queue 15 min and fail without building ("capacity constraints"): `gh run rerun`.
+
+## 6.11.2026 (v35)
+- A CGEvent tap callback that returns nil swallows the key; returning `Unmanaged.passUnretained(ev)` after acting lets the
+  app in front receive it too. Space is pass-through since v35 (Marko: "It's not swallowed by the voice engine. It is
+  pass-through"); Esc and S are still taken. Re-signing with "Mantra Apps" + the same bundle id kept Accessibility.
