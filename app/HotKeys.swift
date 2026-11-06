@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+// v35 (6.11.2026): Space is no longer taken: it pauses / plays on the voice AND reaches the app in front (Resolve plays
+// while the voice pauses, the next Space stops Resolve and the voice goes on). Esc and S are still taken.
 // v33 (Marko, 5.11.2026: "activate the shortcut while the voice engine is running. I can simply press Escape at that
 // moment to stop it, and I can press the spacebar to pause it, and I can press the S key on the keyboard to show or hide
 // subtitles. Simple as that"): while a reading plays (▶ ■ SUB in the menu bar), three bare keys, in any app:
@@ -45,11 +47,13 @@ final class HotKeys {
         let mc = MenuControls.shared
         switch ev.getIntegerValueField(.keyboardEventKeycode) {
         case 53: DispatchQueue.main.async { mc.stop() }      // Esc
-        case 49: DispatchQueue.main.async { mc.play() }      // Space
+        case 49:                                             // Space: v35 pass-through (Marko 6.11.2026: "It's not
+            DispatchQueue.main.async { mc.play() }           // swallowed by the voice engine. It is pass-through"):
+            return Unmanaged.passUnretained(ev)              // the voice pauses / plays on AND the app in front gets it
         case 1:  DispatchQueue.main.async { mc.sub() }       // S
         default: return Unmanaged.passUnretained(ev)
         }
-        return nil                                           // taken: the app in front does not get it
+        return nil                                           // Esc, S: taken, the app in front does not get them
     }
 }
 
