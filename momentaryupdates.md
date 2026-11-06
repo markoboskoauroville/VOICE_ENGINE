@@ -212,3 +212,4 @@ Marko: "The order is triangle, square, and then sub."
 > Please fix my voice engine and it's Subtitles and shortcut keys. So please remove any shortcut keys from it. It doesn't use Keyboard to be controlled, only the mouse. And in the subtitle itself. If it's not already present add the stop button.
 
 **Status:** saved first (6.11.2026). Plan v36: HotKeys.swift (Esc / Space / S) and the PERMISSIONS word (it only existed for those keys) removed; STOP (square) already stands on the subtitle's right side since v29, kept.
+**Status (6.11.2026, ~20:15):** v36 built by GitHub (run 42277711119, green; the first run was cancelled waiting for a runner), installed, signed Mantra Apps, running (pid 68574). Seen on screen: the subtitle shows HIDE and STOP (square) on the right. No key handling left in the app.

@@ -1,6 +1,6 @@
 # TAKEOVER
 
-**State 6.11.2026: v35**: Space passes through (the voice pauses / plays on and the app in front gets the key; Esc, S still taken). Installed and running.
+**State 6.11.2026: v36**: no shortcut keys (HotKeys, PERMISSIONS removed), mouse only; STOP square on the subtitle. Installed and running. (v35: Space passes through): Space passes through (the voice pauses / plays on and the app in front gets the key; Esc, S still taken). Installed and running.
 
 **State 5.11.2026: v32** (first GitHub Actions build): SUB comes and goes with ▶ ■ (Marko: "The play and stop buttons
 should be gone at the same time"); measured: 3 menu-bar items while reading, 0 after. Install = download release
