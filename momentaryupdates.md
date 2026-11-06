@@ -206,3 +206,9 @@ Marko: "The order is triangle, square, and then sub."
 
 **Status:** saved first (6.11.2026).
 **Status (6.11.2026, ~03:05):** v35 built by GitHub (run 42147833342, green, release v35 Latest), installed, signed Mantra Apps, restarted with voicectl (running, no PERMISSIONS word = Accessibility still on). Space now pauses / plays on the voice AND goes to the app in front; Esc and S still taken. Marko to try it in Resolve.
+
+## 6.11.2026 (~20:05): no shortcut keys, mouse only, STOP on the subtitle
+
+> Please fix my voice engine and it's Subtitles and shortcut keys. So please remove any shortcut keys from it. It doesn't use Keyboard to be controlled, only the mouse. And in the subtitle itself. If it's not already present add the stop button.
+
+**Status:** saved first (6.11.2026). Plan v36: HotKeys.swift (Esc / Space / S) and the PERMISSIONS word (it only existed for those keys) removed; STOP (square) already stands on the subtitle's right side since v29, kept.

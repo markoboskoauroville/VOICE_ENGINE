@@ -18,8 +18,7 @@ The window, top to bottom:
   (dark ↔ light), BACKGROUND ON THE MAIN SCREEN, WHERE ON THE SCREEN (TOP / MIDDLE / BOTTOM, or WHERE YOU DRAGGED IT).
   The old words: "band" is the background, "big screen" the main screen.
 
-**Keys while the voice reads** (v33, 5.11.2026; v35 6.11.2026: Space passes through to the app in front, e.g. Resolve plays while the voice pauses): Esc stops the reading, Space pauses / plays on, S shows / hides the
-subtitles, in any app, only while ▶ ■ SUB stand in the menu bar (Accessibility; PERMISSIONS in the first row while missing).
+**No keys (v36, 6.11.2026):** Marko: *"remove any shortcut keys ... It doesn't use Keyboard to be controlled, only the mouse."* Esc / Space / S (v33–v35) and the PERMISSIONS word are gone; the voice is controlled only by the mouse: ▶ ■ SUB in the menu bar, and HIDE and STOP (square) on the right of the subtitle.
 
 **When the voice waits** (v21–v22): only while Voice to Text (Mantra) records a take or Speechify listens to Marko; a notice
 under the blob says why ("WAITING: VOICE TO TEXT (MANTRA) IS RECORDING YOU") with READ ANYWAY, which plays this reading at once.
