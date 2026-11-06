@@ -205,3 +205,4 @@ Marko: "The order is triangle, square, and then sub."
 "update Voice Engine shortcuts. I want it so that when I press the spacebar, it actually passes through this application. It means it stops the playback. It pauses the playback, but at the same time, for example, if I'm in DaVinci Resolve, it starts to play my video, and when I press space again, it continues my voice. It's not swallowed by the voice engine. It is pass-through"
 
 **Status:** saved first (6.11.2026).
+**Status (6.11.2026, ~03:05):** v35 built by GitHub (run 42147833342, green, release v35 Latest), installed, signed Mantra Apps, restarted with voicectl (running, no PERMISSIONS word = Accessibility still on). Space now pauses / plays on the voice AND goes to the app in front; Esc and S still taken. Marko to try it in Resolve.
