@@ -217,3 +217,4 @@ Marko: "The order is triangle, square, and then sub."
 > Please improve subtitles in my voice engine. Um they don't have shadow. So if something is in the background I don't see make a hard shadow.
 
 **Status:** saved first (8.11.2026). Plan v37: a hard black shadow (no blur, offset down-right) under every subtitle word, sized with the text.
+**Status (8.11.2026, ~16:05):** v37 built by GitHub (run 42492245143, green), installed, signed Mantra Apps, running; the shadow seen in a screenshot of a reading.
