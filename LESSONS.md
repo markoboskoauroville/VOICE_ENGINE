@@ -51,3 +51,6 @@ pull and read the latest VERSION before choosing a number.
 - Resume is word-exact: the voice server (MANTRA_VOICE POST /speak/pause {paused:true|false}) feeds silence to the speaker and keeps the reading's position, so the sound goes on from the very word. The reading is rendered file-first, so nothing is re-synthesised.
 - The subtitle's own clock must stop too: predicted position ran on during a pause and the lit word crept ahead; now `playing=false` while paused and the state is synced from /speaking `paused` (a click wins for 1.5 s so the poll does not flip it back).
 - No hot key: v36, Marko wants the mouse only. API already documented in MANTRA_VOICE API.md (/speak/pause).
+
+## v39, 8.11.2026: the rule moved to VOICE_ENGINE_UNIVERSAL
+PauseSync (press, 1.5 s guard, sync from the voice, label, symbol, request) now comes from the public repo VOICE_ENGINE_UNIVERSAL, git submodule `universal/`, compiled in by build.sh and the workflow (checkout with submodules). The Android app uses the Kotlin twin. Change the rule there, then `git submodule update --remote` here.

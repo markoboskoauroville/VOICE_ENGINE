@@ -333,22 +333,23 @@ final class SubtitleEngine {
             DispatchQueue.main.async { self.polling = false; if let st = st { self.heard(st) } }
         }.resume()
     }
-    var paused = false; var pausedAt = Date.distantPast
+    var pause = PauseSync()          // v39: the rule lives in VOICE_ENGINE_UNIVERSAL (SPEC.md §3), shared with the phones
+    var paused: Bool { pause.paused }
     func togglePause() {
-        paused.toggle(); pausedAt = Date()
+        _ = pause.press()
         paintPause()
         playing = playing && !paused; wall = Date().timeIntervalSince1970
-        var r = URLRequest(url: URL(string: VOICE_URL + "/speak/pause")!, timeoutInterval: 1.5)
-        r.httpMethod = "POST"; r.httpBody = Data((paused ? "{\"paused\": true}" : "{\"paused\": false}").utf8)
+        let q = pause.request
+        var r = URLRequest(url: URL(string: VOICE_URL + q.path)!, timeoutInterval: 1.5)
+        r.httpMethod = "POST"; r.httpBody = Data(q.body.utf8)
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         URLSession.shared.dataTask(with: r).resume()
     }
     func paintPause() {
-        for s in subs { for k in s.keyViews where k.text == "PAUSE" {
-            k.rename(paused ? "CONTINUE" : "PAUSE", paused ? "play.fill" : "pause.fill") } }
+        for s in subs { for k in s.keyViews where k.text == "PAUSE" { k.rename(pause.label, pause.symbol) } }
     }
     func heard(_ st: Speaking) {
-        if Date().timeIntervalSince(pausedAt) > 1.5 { let p = st.paused ?? false; if p != paused { paused = p; paintPause() } }
+        if pause.sync(st.paused ?? false) { paintPause() }
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)
         if !following {
             // a reading began (or goes on after he clicked it away: then only a new reading brings it back)

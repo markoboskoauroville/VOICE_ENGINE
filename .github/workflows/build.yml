@@ -16,6 +16,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Build
         run: SIGN=- NO_INSTALL=1 ./build.sh
       - name: Pack

@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 V=$(sed -n 's/^let VERSION = \([0-9]*\)/\1/p' app/App.swift)
 APP="build/Voice Engine (Mantra).app"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-swiftc -O -swift-version 5 -parse-as-library -o "$APP/Contents/MacOS/VoiceEngine" app/*.swift 2>&1 | grep -v "warning:" || true
+swiftc -O -swift-version 5 -parse-as-library -o "$APP/Contents/MacOS/VoiceEngine" app/*.swift universal/swift/*.swift 2>&1 | grep -v "warning:" || true
 [ -x "$APP/Contents/MacOS/VoiceEngine" ] || { echo "the app did not build"; exit 1; }
 cat > "$APP/Contents/Info.plist" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
