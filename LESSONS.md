@@ -45,3 +45,9 @@ pull and read the latest VERSION before choosing a number.
 - A CGEvent tap callback that returns nil swallows the key; returning `Unmanaged.passUnretained(ev)` after acting lets the
   app in front receive it too. Space is pass-through since v35 (Marko: "It's not swallowed by the voice engine. It is
   pass-through"); Esc and S are still taken. Re-signing with "Mantra Apps" + the same bundle id kept Accessibility.
+
+## v38, 8.11.2026: PAUSE / CONTINUE on the subtitle
+- Marko: "There is a stop, there is a hide, but there is no pause to continue later." The blob and the menu bar already paused; the subtitle (the thing he looks at) had only HIDE and STOP. PAUSE now stands first of three (AX ids subtitle-pause / -hide / -stop), becomes CONTINUE with a play symbol.
+- Resume is word-exact: the voice server (MANTRA_VOICE POST /speak/pause {paused:true|false}) feeds silence to the speaker and keeps the reading's position, so the sound goes on from the very word. The reading is rendered file-first, so nothing is re-synthesised.
+- The subtitle's own clock must stop too: predicted position ran on during a pause and the lit word crept ahead; now `playing=false` while paused and the state is synced from /speaking `paused` (a click wins for 1.5 s so the poll does not flip it back).
+- No hot key: v36, Marko wants the mouse only. API already documented in MANTRA_VOICE API.md (/speak/pause).

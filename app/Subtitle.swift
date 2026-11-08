@@ -16,7 +16,7 @@ import AppKit
 
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
-let KW: CGFloat = 150            // the right keys' width (v29: two symbols, HIDE and STOP)
+let KW: CGFloat = 220            // the right keys' width (v38: three symbols, PAUSE, HIDE and STOP)
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
 let HIDE_NOTE = "community.auroville.subtitle.hide"     // the answer box says: the subtitle closes
@@ -64,6 +64,11 @@ final class KeyLabel: NSView {
         self.text = text; self.size = size; self.action = action; self.symbol = symbol; super.init(frame: frame)
         toolTip = text.capitalized
         setAccessibilityElement(true); setAccessibilityRole(.button); setAccessibilityLabel(text.capitalized)
+        setAccessibilityIdentifier("subtitle-" + text.lowercased())
+    }
+    /// v38: PAUSE turns into CONTINUE (and back): word, symbol, tooltip and AX label follow
+    func rename(_ t: String, _ sym: String) {
+        symbol = sym; toolTip = t.capitalized; setAccessibilityLabel(t.capitalized); needsDisplay = true
     }
     override func accessibilityPerformPress() -> Bool { action(); return true }
     required init?(coder: NSCoder) { fatalError() }
@@ -141,9 +146,12 @@ final class ScreenSub {
         // completely ... These two controls I need on the right side. All other controls can just disappear ... They can
         // also be symbolic"): two SF Symbols on the right. HIDE (captions crossed out): the subtitle goes, the voice reads
         // on (the menu bar's SUB brings subtitles back). STOP (a square): the reading ends completely.
+        // v38 (Marko, 8.11.2026: "There is a stop, there is a hide, but there is no pause to continue later"): PAUSE first
+        // (POST /speak/pause holds the voice at the word being said; the same button then reads CONTINUE).
         let right: [(String, String, CGFloat, () -> Void)] = [
-            ("HIDE", "captions.bubble.fill", 0, { [weak engine] in post("/speak/close"); engine?.hide() }),
-            ("STOP", "stop.fill", 70, { [weak engine] in engine?.hide(); stopAndExit() })]
+            ("PAUSE", "pause.fill", 0, { [weak engine] in engine?.togglePause() }),
+            ("HIDE", "captions.bubble.fill", 70, { [weak engine] in post("/speak/close"); engine?.hide() }),
+            ("STOP", "stop.fill", 140, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, x, f) in right { band.addSubview(KeyLabel(t, 30, NSRect(x: x, y: 0, width: 64, height: 64), symbol: sym, f)) }
     }
     var keyViews: [KeyLabel] { band.subviews.compactMap { $0 as? KeyLabel } }
@@ -205,7 +213,7 @@ final class SubtitleEngine {
     // the right keys are laid at the screen's right edge, the left ones at its left
     func placeKeys(_ s: ScreenSub) {
         let w = s.screen.visibleFrame.width, keys = s.keyViews
-        let xs: [CGFloat] = [0, 70]
+        let xs: [CGFloat] = [0, 70, 140]
         for (i, k) in keys.enumerated() where i < xs.count { k.frame.origin.x = w - KW - 12 + xs[i] }
     }
 
@@ -250,6 +258,7 @@ final class SubtitleEngine {
         text = t; words = ws; lit = -2
         conf = SubtitleSettings.load()                 // the settings window's changes, live
         for s in subs { s.layout(conf, t); placeKeys(s) }
+        paintPause()
         paint(-1)
     }
     func resize(_ step: Double) {
@@ -324,7 +333,22 @@ final class SubtitleEngine {
             DispatchQueue.main.async { self.polling = false; if let st = st { self.heard(st) } }
         }.resume()
     }
+    var paused = false; var pausedAt = Date.distantPast
+    func togglePause() {
+        paused.toggle(); pausedAt = Date()
+        paintPause()
+        playing = playing && !paused; wall = Date().timeIntervalSince1970
+        var r = URLRequest(url: URL(string: VOICE_URL + "/speak/pause")!, timeoutInterval: 1.5)
+        r.httpMethod = "POST"; r.httpBody = Data((paused ? "{\"paused\": true}" : "{\"paused\": false}").utf8)
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        URLSession.shared.dataTask(with: r).resume()
+    }
+    func paintPause() {
+        for s in subs { for k in s.keyViews where k.text == "PAUSE" {
+            k.rename(paused ? "CONTINUE" : "PAUSE", paused ? "play.fill" : "pause.fill") } }
+    }
     func heard(_ st: Speaking) {
+        if Date().timeIntervalSince(pausedAt) > 1.5 { let p = st.paused ?? false; if p != paused { paused = p; paintPause() } }
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)
         if !following {
             // a reading began (or goes on after he clicked it away: then only a new reading brings it back)
@@ -350,6 +374,7 @@ final class SubtitleEngine {
         let sent = st.sentence ?? ""
         if st.phase == "making" && sent.isEmpty { if text != "…" { show("…", []) }; return }
         if (st.i ?? -1) != shownI || text != sent { shownI = st.i ?? -1; show(sent, st.words ?? []) }
+        if paused { playing = false; return }      // v38: paused, the lit word stands still (the clock does not run on)
         sample(st.pos ?? -1, st.i ?? -1)
     }
     func sample(_ observed: Double, _ s: Int) {
