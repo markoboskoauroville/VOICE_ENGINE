@@ -1,5 +1,6 @@
 # TAKEOVER
 
+**State 8.11.2026 (night): v38**: PAUSE / CONTINUE on the subtitle (AX id subtitle-pause), GitHub run 42528731599 green, installed, signed, running.
 **State 8.11.2026: v37**: hard black shadow under every subtitle word (no blur, 7 % of the letter size, down-right; NSShadow offsets are in screen space, so the height is negative). Built by GitHub (run 42492245143, green), installed, signed Mantra Apps, running; seen in a screenshot on the MacBook screen.
 **State 6.11.2026: v36**: no shortcut keys (HotKeys, PERMISSIONS removed), mouse only; STOP square on the subtitle. Installed and running. (v35: Space passes through): Space passes through (the voice pauses / plays on and the app in front gets the key; Esc, S still taken). Installed and running.
 
