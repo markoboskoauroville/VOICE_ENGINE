@@ -226,7 +226,12 @@ final class SubtitleEngine {
         let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: s.size) ?? .systemFont(ofSize: s.size)
         let p = NSMutableParagraphStyle(); p.alignment = .center; p.lineBreakMode = .byWordWrapping
         let col = nscolour(conf.colour) ?? nscolour("#E8A33D")!
-        let a = NSMutableAttributedString(string: text, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p])
+        // v37 (Marko, 8.11.2026: "they don't have shadow. So if something is in the background I don't see make a hard
+        // shadow"): a hard black shadow, no blur, offset down and right by 7 % of the letter size (at least 2 pt).
+        // NSShadow's offset is in screen space (not flipped with the view): a negative height moves it down.
+        let sh = NSShadow(); sh.shadowColor = NSColor.black; sh.shadowBlurRadius = 0
+        let off = max(2, round(s.size * 0.07)); sh.shadowOffset = NSSize(width: off, height: -off)
+        let a = NSMutableAttributedString(string: text, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p, .shadow: sh])
         if k >= 0, k < words.count, let st = words[k].s, let en = words[k].e {
             // the server counts characters (code points), NSString counts UTF-16: convert
             let scalars = Array(text.unicodeScalars)
