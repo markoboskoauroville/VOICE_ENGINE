@@ -213,3 +213,7 @@ Marko: "The order is triangle, square, and then sub."
 
 **Status:** saved first (6.11.2026). Plan v36: HotKeys.swift (Esc / Space / S) and the PERMISSIONS word (it only existed for those keys) removed; STOP (square) already stands on the subtitle's right side since v29, kept.
 **Status (6.11.2026, ~20:15):** v36 built by GitHub (run 42277711119, green; the first run was cancelled waiting for a runner), installed, signed Mantra Apps, running (pid 68574). Seen on screen: the subtitle shows HIDE and STOP (square) on the right. No key handling left in the app.
+
+> Please improve subtitles in my voice engine. Um they don't have shadow. So if something is in the background I don't see make a hard shadow.
+
+**Status:** saved first (8.11.2026). Plan v37: a hard black shadow (no blur, offset down-right) under every subtitle word, sized with the text.
