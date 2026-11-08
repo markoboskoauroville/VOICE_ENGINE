@@ -218,3 +218,7 @@ Marko: "The order is triangle, square, and then sub."
 
 **Status:** saved first (8.11.2026). Plan v37: a hard black shadow (no blur, offset down-right) under every subtitle word, sized with the text.
 **Status (8.11.2026, ~16:05):** v37 built by GitHub (run 42492245143, green), installed, signed Mantra Apps, running; the shadow seen in a screenshot of a reading.
+
+> fixing my subtitles, my voice algorithm in the subtitles. I'm missing the pause there. There is a stop, there is a hide, but there is no pause to continue later.
+
+**Status:** saved first (8.11.2026). Plan v38: PAUSE / CONTINUE button on the subtitle beside HIDE and STOP (AX id `subtitle-pause`); the server's POST /speak/pause already holds the word exactly. No hot key (v36: mouse only).
