@@ -54,3 +54,7 @@ pull and read the latest VERSION before choosing a number.
 
 ## v39, 8.11.2026: the rule moved to VOICE_ENGINE_UNIVERSAL
 PauseSync (press, 1.5 s guard, sync from the voice, label, symbol, request) now comes from the public repo VOICE_ENGINE_UNIVERSAL, git submodule `universal/`, compiled in by build.sh and the workflow (checkout with submodules). The Android app uses the Kotlin twin. Change the rule there, then `git submodule update --remote` here.
+
+## 9.11.2026 (v40)
+- The voice cache is pruned (last dozen clips), so a replay needs its own copy of the audio: the hook copies it to ~/.voice_engine/last/<id>/ and keeps three. A replay is a new reading and would register itself again: the record id is a hash of the sentences, so it overwrites the same record instead of piling up.
+- A STOP that means two things (stop the replay / close the player) is decided by whether the server says `on`, never by a flag the app kept alone.

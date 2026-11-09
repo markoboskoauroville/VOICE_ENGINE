@@ -222,3 +222,9 @@ Marko: "The order is triangle, square, and then sub."
 > fixing my subtitles, my voice algorithm in the subtitles. I'm missing the pause there. There is a stop, there is a hide, but there is no pause to continue later.
 
 **Status:** saved first (8.11.2026). Plan v38: PAUSE / CONTINUE button on the subtitle beside HIDE and STOP (AX id `subtitle-pause`); the server's POST /speak/pause already holds the word exactly. No hot key (v36: mouse only).
+
+## 9.11.2026: the replay player stays in the menu bar
+
+> Please repeat the last voice: I was not here and now you need to update my voice engine. After the voice is played, you keep the player in my menu bar and then I can replay the message. If I press stop on a message which is not playing, then this menu bar player disappears.
+
+**Status:** saved first (9.11.2026). Plan v40: voiced.py (MANTRA_VOICE) writes every finished reading to ~/.voice_engine/last/ (record JSON + copied audio, newest 3 kept); the Engine (app/Replay.swift) shows a replay item (play, becomes stop while playing) and a stop item in the menu bar; stop while idle removes both until the next message. Replay goes through POST /speak with the saved clips, so the subtitles run again.

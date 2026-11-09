@@ -60,7 +60,7 @@ final class MenuControls: NSObject {
     }
 
     // v30: quitting the engine takes every item out
-    func removeAll() { remove() }
+    func removeAll() { remove(); ReplayPlayer.shared.removeAll() }
 
     // v28: drawn in real colours. Until v27 "on" was a BLACK filled box (not a template, so the system did not tint it):
     // on the dark menu bar it vanished, the bug Marko saw ("If I press Subtitle, then this icon ... disappears").
@@ -109,6 +109,7 @@ final class MenuControls: NSObject {
 
     // every answer of GET /speaking (SubtitleEngine's poll)
     func heard(_ st: Speaking) {
+        ReplayPlayer.shared.tick(st)      // v40: the replay player of the last message
         if st.on || !(st.held ?? "").isEmpty {
             quiet = 0
             if Date().timeIntervalSince(clickedAt) > 1.5 { paused = st.paused ?? false }

@@ -1,3 +1,4 @@
+**State 9.11.2026: v40** replay player in the menu bar (app/Replay.swift; hook `Reader._register_last` in MANTRA_VOICE voiced.py writes ~/.voice_engine/last/). Marko: "After the voice is played, you keep the player in my menu bar and then I can replay the message. If I press stop on a message which is not playing, then this menu bar player disappears." Items: play circle (AX `replay-play`, a stop circle while playing) and a square (`replay-stop`); the newest 3 messages are kept, the newest is replayed. Test: AXPress `replay-play` / `replay-stop` on the status items; the player appears 1 s after a reading ends.
 # TAKEOVER
 
 **State 8.11.2026 (night): v39** built by GitHub run 42530449181 green, installed (pid 79041); PauseSync now from the public repo VOICE_ENGINE_UNIVERSAL (submodule universal/).
