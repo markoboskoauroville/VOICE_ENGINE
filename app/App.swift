@@ -39,6 +39,7 @@ struct SubtitleSettings: Codable, Equatable {
     var bandmain: Bool = true       // v7: the band on the main (big) screen; off = letters only there (Marko, 13.10.2026)
     var subtitles: Bool = true      // v10: the blob's CC, the subtitle on or off (Marko, 19.10.2026)
     var voice: Bool = true          // v13: THE VOICE ENGINE ON / OFF; off, the Stop hook reads no answer (Marko, 19.10.2026)
+    var column: Double = 38.2       // v43: the text and the keys live in one centred column, this % of the screen's width (the golden minor part; Marko, 13.11.2026)
     var ypos: Double = -1           // v18: where he dragged the band, its centre as a fraction of the screen's height from
                                     // the bottom (0..1); -1 = `position` decides (Marko, 31.10.2026)
 
@@ -61,6 +62,7 @@ struct SubtitleSettings: Codable, Equatable {
         subtitles = (try? c.decode(Bool.self, forKey: .subtitles)) ?? z.subtitles
         voice = (try? c.decode(Bool.self, forKey: .voice)) ?? z.voice
         ypos = (try? c.decode(Double.self, forKey: .ypos)) ?? z.ypos
+        column = (try? c.decode(Double.self, forKey: .column)) ?? z.column
     }
 
     static let file = URL(fileURLWithPath: NSHomeDirectory() + "/.config/subtitle.json")
@@ -442,6 +444,13 @@ struct Settings: View {
                     ForEach([2.0, 30.0, 120.0, 600.0, 0.0], id: \.self) { v in
                         Word(text: lingerName(v), on: m.s.linger == v) { m.s.linger = v }
                     }
+                }
+            }
+            Row(name: "COLUMN WIDTH (TEXT AND KEYS)", value: String(format: "%.1f %% of the screen", m.s.column)) {
+                HStack(spacing: 8) {
+                    Text("NARROW").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                    Slider(value: $m.s.column, in: 20...100, step: 0.1)
+                    Text("WIDE").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
                 }
             }
             Row(name: "BACKGROUND BEHIND THE SUBTITLE", value: m.s.band < 1 ? "NONE" : String(format: "%.0f %% solid", m.s.band)) {

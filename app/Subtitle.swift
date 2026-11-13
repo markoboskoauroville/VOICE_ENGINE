@@ -189,20 +189,21 @@ final class ScreenSub {
     func layout(_ c: SubtitleSettings, _ text: String) {
         let vf = screen.visibleFrame
         size = max(14, floor(vf.height * CGFloat(c.size) / 100))
-        let room = vf.width - 96            // v43: full width, centred (x 48 both sides)
+        let room = max(260, floor(vf.width * CGFloat(c.column) / 100))   // v43: the column, centred on the screen
+        let pw = room + 48                  // the band: the column plus 24 each side
         let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
-        let lines = max(1, min(6, ceil(wide / (room * 0.92))))
+        let lines = max(1, min(10, ceil(wide / (room * 0.92))))
         let kh: CGFloat = ROWH * 3 + 8    // v43: three rows of keys under the text
         let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh)
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
         if c.ypos >= 0 { y = ScreenSub.clampY(vf.minY + CGFloat(c.ypos) * vf.height - h / 2, h, vf) }   // v18: dragged
-        panel.setFrame(NSRect(x: vf.minX, y: y, width: vf.width, height: h), display: false)
+        panel.setFrame(NSRect(x: vf.minX + floor((vf.width - pw) / 2), y: y, width: pw, height: h), display: false)
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
         band.fill = NSColor(white: CGFloat(c.grey) / 100, alpha: alpha)
-        band.textRect = NSRect(x: 48, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
+        band.textRect = NSRect(x: 24, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
         for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 2 }                  // x: SubtitleEngine.placeKeys
     }
@@ -210,7 +211,7 @@ final class ScreenSub {
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
     func moveTo(fraction f: CGFloat) {
         let vf = screen.visibleFrame, h = panel.frame.height
-        panel.setFrameOrigin(NSPoint(x: vf.minX, y: ScreenSub.clampY(vf.minY + f * vf.height - h / 2, h, vf)))
+        panel.setFrameOrigin(NSPoint(x: panel.frame.minX, y: ScreenSub.clampY(vf.minY + f * vf.height - h / 2, h, vf)))
     }
     func show() { panel.orderFrontRegardless() }
     func close() { panel.orderOut(nil); panel.close() }
@@ -252,7 +253,7 @@ final class SubtitleEngine {
 
     // the right keys are laid at the screen's right edge, the left ones at its left
     func placeKeys(_ s: ScreenSub) {
-        let w = s.screen.visibleFrame.width, keys = s.keyViews
+        let w = s.panel.frame.width, keys = s.keyViews
         for k in keys { k.frame.origin.x = floor((w - ROWW[k.row]) / 2) + k.slot }
     }
 
