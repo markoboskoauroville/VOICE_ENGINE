@@ -88,18 +88,30 @@ final class KeyLabel: NSView {
     override func mouseDown(with e: NSEvent) {}
     override func mouseUp(with e: NSEvent) { action() }
     override func draw(_ r: NSRect) {
+        // v43 (Marko, 13.11.2026: "exactly the same for the controls as for the subtitles. They need to have hard shadow"):
+        // the subtitle's rules: its colour, its font, a hard black shadow, no blur, down and right by 7 % of the glyph (>= 2 pt).
+        // This view is not flipped: down is minus y.
+        let conf = SubtitleEngine.shared.conf
+        let col = nscolour(conf.colour) ?? NSColor(white: 0.92, alpha: 1)
+        let off = max(2, round(size * 0.07))
         if let name = symbol, let base = NSImage(systemSymbolName: name, accessibilityDescription: text) {
-            let cfg = NSImage.SymbolConfiguration(pointSize: size, weight: .regular).applying(.init(paletteColors: [NSColor(white: 0.92, alpha: 0.9)]))
-            let img = base.withSymbolConfiguration(cfg) ?? base
-            let sz = img.size
-            img.draw(in: NSRect(x: (bounds.width - sz.width) / 2, y: (bounds.height - sz.height) / 2, width: sz.width, height: sz.height))
+            func img(_ c: NSColor) -> NSImage {
+                let cfg = NSImage.SymbolConfiguration(pointSize: size, weight: conf.bold ? .bold : .regular).applying(.init(paletteColors: [c]))
+                return base.withSymbolConfiguration(cfg) ?? base
+            }
+            let sz = img(col).size
+            let x = (bounds.width - sz.width) / 2, y = (bounds.height - sz.height) / 2
+            img(.black).draw(in: NSRect(x: x + off, y: y - off, width: sz.width, height: sz.height))
+            img(col).draw(in: NSRect(x: x, y: y, width: sz.width, height: sz.height))
             return
         }
         let p = NSMutableParagraphStyle(); p.alignment = .center
-        let a: [NSAttributedString.Key: Any] = [.font: NSFont(name: FONT, size: size) ?? .systemFont(ofSize: size),
-                                                .foregroundColor: NSColor(white: 0.92, alpha: 0.9), .paragraphStyle: p]
+        let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
         let h = size * 1.3
-        ((display ?? text) as NSString).draw(in: NSRect(x: 0, y: (bounds.height - h) / 2, width: bounds.width, height: h), withAttributes: a)
+        let rect = NSRect(x: 0, y: (bounds.height - h) / 2, width: bounds.width, height: h)
+        let shadowed = (display ?? text) as NSString
+        shadowed.draw(in: rect.offsetBy(dx: off, dy: -off), withAttributes: [.font: font, .foregroundColor: NSColor.black, .paragraphStyle: p])
+        shadowed.draw(in: rect, withAttributes: [.font: font, .foregroundColor: col, .paragraphStyle: p])
     }
 }
 
