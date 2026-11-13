@@ -169,7 +169,7 @@ final class ScreenSub {
             ("SLOWER", "minus.circle", 212, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
             ("SPEED", nil, 256, 64, {}),
             ("FASTER", "plus.circle", 320, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
-            ("HIDE", "captions.bubble.fill", 392, 48, { post("/speak/close"); engine?.hide() }),
+            ("HIDE", "captions.bubble.fill", 392, 48, { [weak engine] in post("/speak/close"); engine?.hide() }),
             ("STOP", "stop.fill", 444, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, x, w, f) in right {
             let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 64), symbol: sym, f)
