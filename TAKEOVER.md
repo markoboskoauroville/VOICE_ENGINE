@@ -155,3 +155,7 @@ and plays on (orange while paused; while a reading is held by the microphone gua
 completely, SUB turns the subtitles on and off (filled orange while on; `subtitles` in ~/.config/subtitle.json, off by
 default since 2.11.2026). They go a moment after the reading ends. The blob no longer shows. v23: a GET /speaking poll that
 never answered is dropped after 3 s (the copy running since login had stopped showing anything).
+
+## State at close, 13.11.2026
+
+v41-v45 (13.11.2026): subtitle self-heals (verify on screen, rebuild once, rebuild on wake/space); player keys on the subtitle (previous, next, skip, speed - / +); one centred column (38.2 % of the screen, setting) with keys in the subtitle's colour, font and hard shadow; at most 4 words at a time, chunks break at phrase boundaries; HIDE only hides (voice goes on), STOP also clears the queue; a drag starting on a key moves the band vertically and never presses the key; the dragged position is saved. Waiting for Marko: ears-test of the free voice was stopped unfinished.
