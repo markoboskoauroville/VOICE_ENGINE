@@ -49,6 +49,13 @@ func stopAndExit() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { finish() }
 }
 
+func subLog(_ m: String) {
+    let f = NSString(string: "~/.voice_engine/subtitle.log").expandingTildeInPath
+    let line = ISO8601DateFormatter().string(from: Date()) + " " + m + "\n"
+    if let h = FileHandle(forWritingAtPath: f) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
+    else { try? FileManager.default.createDirectory(atPath: (f as NSString).deletingLastPathComponent, withIntermediateDirectories: true); try? line.write(toFile: f, atomically: true, encoding: .utf8) }
+}
+
 func post(_ path: String) {
     var r = URLRequest(url: URL(string: VOICE_URL + path)!)
     r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -207,6 +214,16 @@ final class SubtitleEngine {
             guard let self = self, !self.subs.isEmpty else { return }
             self.drop(); self.open(); self.show(self.text, self.words)      // a display plugged in or out
         }
+        // v41 (Marko, 13.11.2026: "I am pressing subtitles ten fifty times. And nothing's happening"): after sleep, wake or a
+        // Space change the window server can keep cached panels off screen for good; rebuild them while a reading is on.
+        let ws = NSWorkspace.shared.notificationCenter
+        for n in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification, NSWorkspace.activeSpaceDidChangeNotification] {
+            ws.addObserver(forName: n, object: nil, queue: .main) { [weak self] note in
+                guard let self = self, self.following || !self.subs.isEmpty else { return }
+                subLog("rebuild on " + note.name.rawValue)
+                self.rebuild()
+            }
+        }
         Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in self?.pollOnce() }
     }
 
@@ -219,9 +236,37 @@ final class SubtitleEngine {
 
     func open() {
         conf = SubtitleSettings.load()
-        guard subs.isEmpty, conf.subtitles else { return }      // v10: the blob's CC turns the subtitle off
+        guard conf.subtitles else { return }                    // v10: the blob's CC turns the subtitle off
+        if !subs.isEmpty {                                      // v41: panels kept from before: order them front again, check them
+            subs.forEach { $0.show() }; verifyShown(retry: true); return
+        }
         subs = NSScreen.screens.map { ScreenSub($0, self) }
         subs.forEach { $0.show() }
+        verifyShown(retry: true)
+    }
+    /// v41: drop and recreate the panels, put the sentence back
+    func rebuild() {
+        drop(); open()
+        if !subs.isEmpty { show(text, words) }
+    }
+    /// v41: within 0.5 s every panel must be on screen (the window server says so); if not, rebuild once and log it
+    func verifyShown(retry: Bool) {
+        let wanted = subs.map { $0.panel.windowNumber }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self, !self.subs.isEmpty, self.conf.subtitles else { return }
+            if self.subs.map({ $0.panel.windowNumber }) != wanted { return }      // already rebuilt by someone else
+            let info = (CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]]) ?? []
+            let on = Set(info.compactMap { $0[kCGWindowNumber as String] as? Int })
+            let bad = self.subs.filter { !on.contains($0.panel.windowNumber) }
+            if bad.isEmpty { return }
+            subLog("panels not on screen (\(bad.count) of \(self.subs.count)); " + (retry ? "recreating" : "giving up"))
+            if retry {
+                self.drop(); self.subs = NSScreen.screens.map { ScreenSub($0, self) }
+                self.show(self.text, self.words)
+                self.subs.forEach { $0.show() }
+                self.verifyShown(retry: false)
+            }
+        }
     }
     func drop() { subs.forEach { $0.close() }; subs = [] }
     // v10, the blob's CC: on, the subtitle comes back at once with the sentence being said; off, it goes and stays gone
