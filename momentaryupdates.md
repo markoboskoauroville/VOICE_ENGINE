@@ -241,3 +241,4 @@ Marko: "The order is triangle, square, and then sub."
 ## 13.11.2026 (v43)
 "when I have a lot of these controls, my subtitles are not anymore in the center. Please center them and make controls in multiple lines, in three lines." Also: "The plus and minus is not working. I just press it, it comes to 0.8".
 "I need more margin from the left and right side for my subtitles. Make bigger margins. Let me just maybe make a golden cut from the left side and the right side, so when I'm in front of my screen, I don't need to move my head too much. Make everything basically narrower, so the text is fitting with a big margin from the left side of the BenQ and the right side ... or any other monitor for that matter". And: "subtitles are mess ... Fix subtitle by testing, clicking on every icon, and seeing if it behaves."
+"exactly the same for the controls as for the subtitles. They need to have hard shadow, so they follow the same design rules."
