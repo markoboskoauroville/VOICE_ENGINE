@@ -85,8 +85,20 @@ final class KeyLabel: NSView {
     override func accessibilityPerformPress() -> Bool { action(); return true }
     required init?(coder: NSCoder) { fatalError() }
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
-    override func mouseDown(with e: NSEvent) {}
-    override func mouseUp(with e: NSEvent) { action() }
+    // v44: a drag that starts on a key moves the band (vertically only) and never presses the key
+    private var downY: CGFloat = 0, dragged = false
+    override func mouseDown(with e: NSEvent) {
+        downY = NSEvent.mouseLocation.y; dragged = false
+        (superview as? BandView)?.mouseDown(with: e)
+    }
+    override func mouseDragged(with e: NSEvent) {
+        if abs(NSEvent.mouseLocation.y - downY) > 3 { dragged = true }
+        (superview as? BandView)?.mouseDragged(with: e)
+    }
+    override func mouseUp(with e: NSEvent) {
+        if dragged { dragged = false; (superview as? BandView)?.mouseUp(with: e); return }
+        action()
+    }
     override func draw(_ r: NSRect) {
         // v43 (Marko, 13.11.2026: "exactly the same for the controls as for the subtitles. They need to have hard shadow"):
         // the subtitle's rules: its colour, its font, a hard black shadow, no blur, down and right by 7 % of the glyph (>= 2 pt).
