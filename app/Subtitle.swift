@@ -17,7 +17,8 @@ import AppKit
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
 let KW: CGFloat = 0              // v43: no keys at the right any more; the group is one centred row under the text (alignment.md)
-let GW: CGFloat = 492            // the group's width: previous .. STOP
+let ROWW: [CGFloat] = [224, 152, 112]   // the three rows' widths (v43)
+let ROWH: CGFloat = 52
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
 let HIDE_NOTE = "community.auroville.subtitle.hide"     // the answer box says: the subtitle closes
@@ -67,6 +68,7 @@ func post(_ path: String) {
 
 final class KeyLabel: NSView {
     let text: String; let size: CGFloat; let action: () -> Void
+    var row = 0
     var slot: CGFloat = 0        // v42: x inside the keys' group
     var display: String?         // v42: the speed's text (1.0x), the name stays SPEED
     var symbol: String?          // v29: an SF Symbol (Apple's symbol font) instead of the word; the word stays its name
@@ -162,19 +164,21 @@ final class ScreenSub {
         // like in any player ... the last sentence, then the next thing in queue is playing"): one group in player order,
         // mouse only: previous sentence, PAUSE, next sentence (on the last one: the next reading in the queue), skip to the
         // next reading, speed - / speed / speed +, then HIDE and STOP.
-        let right: [(String, String?, CGFloat, CGFloat, () -> Void)] = [
-            ("PREVIOUS", "backward.end.fill", 0, 48, { post("/speak/previous") }),
-            ("PAUSE", "pause.fill", 48, 48, { [weak engine] in engine?.togglePause() }),
-            ("NEXT", "forward.end.fill", 96, 48, { post("/speak/next") }),
-            ("SKIP", "forward.fill", 144, 48, { post("/speak/skip") }),
-            ("SLOWER", "minus.circle", 212, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
-            ("SPEED", nil, 256, 64, {}),
-            ("FASTER", "plus.circle", 320, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
-            ("HIDE", "captions.bubble.fill", 392, 48, { [weak engine] in post("/speak/close"); engine?.hide() }),
-            ("STOP", "stop.fill", 444, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
-        for (t, sym, x, w, f) in right {
-            let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 64), symbol: sym, f)
-            k.slot = x
+        // v43 (Marko, 13.11.2026: "center them and make controls in multiple lines, in three lines"): three centred rows under
+        // the text: playback / speed / HIDE STOP. (name, symbol, row, x in the row, width, action)
+        let right: [(String, String?, Int, CGFloat, CGFloat, () -> Void)] = [
+            ("PREVIOUS", "backward.end.fill", 0, 0, 56, { post("/speak/previous") }),
+            ("PAUSE", "pause.fill", 0, 56, 56, { [weak engine] in engine?.togglePause() }),
+            ("NEXT", "forward.end.fill", 0, 112, 56, { post("/speak/next") }),
+            ("SKIP", "forward.fill", 0, 168, 56, { post("/speak/skip") }),
+            ("SLOWER", "minus.circle", 1, 0, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
+            ("SPEED", nil, 1, 44, 64, {}),
+            ("FASTER", "plus.circle", 1, 108, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
+            ("HIDE", "captions.bubble.fill", 2, 0, 56, { [weak engine] in post("/speak/close"); engine?.hide() }),
+            ("STOP", "stop.fill", 2, 56, 56, { [weak engine] in engine?.hide(); stopAndExit() })]
+        for (t, sym, row, x, w, f) in right {
+            let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 48), symbol: sym, f)
+            k.slot = x; k.row = row
             if t == "SPEED" { k.display = "1.0x" }
             band.addSubview(k)
         }
@@ -185,11 +189,11 @@ final class ScreenSub {
     func layout(_ c: SubtitleSettings, _ text: String) {
         let vf = screen.visibleFrame
         size = max(14, floor(vf.height * CGFloat(c.size) / 100))
-        let room = vf.width - LW - KW - 48
+        let room = vf.width - 96            // v43: full width, centred (x 48 both sides)
         let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
         let lines = max(1, min(6, ceil(wide / (room * 0.92))))
-        let kh: CGFloat = 64 + 8          // v43: the keys' row under the text
+        let kh: CGFloat = ROWH * 3 + 8    // v43: three rows of keys under the text
         let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh)
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
@@ -198,9 +202,9 @@ final class ScreenSub {
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
         band.fill = NSColor(white: CGFloat(c.grey) / 100, alpha: alpha)
-        band.textRect = NSRect(x: LW + 24, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
+        band.textRect = NSRect(x: 48, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
-        for k in keys { k.frame.origin.y = h - 64 - 8 }                  // x: SubtitleEngine.placeKeys
+        for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 2 }                  // x: SubtitleEngine.placeKeys
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
@@ -249,7 +253,7 @@ final class SubtitleEngine {
     // the right keys are laid at the screen's right edge, the left ones at its left
     func placeKeys(_ s: ScreenSub) {
         let w = s.screen.visibleFrame.width, keys = s.keyViews
-        for k in keys { k.frame.origin.x = floor((w - GW) / 2) + k.slot }
+        for k in keys { k.frame.origin.x = floor((w - ROWW[k.row]) / 2) + k.slot }
     }
 
     func open() {

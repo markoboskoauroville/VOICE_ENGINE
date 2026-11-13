@@ -237,3 +237,6 @@ Marko: "The order is triangle, square, and then sub."
 
 ## 13.11.2026
 "I have now wished to have more action buttons in my voice when the subtitle is there. I need arrows to speed up or slow down reading, and I also need simple skip buttons, like in any player, so that I can go to the next sentence quickly that's the last sentence, then. The next thing in queue is playing".
+
+## 13.11.2026 (v43)
+"when I have a lot of these controls, my subtitles are not anymore in the center. Please center them and make controls in multiple lines, in three lines." Also: "The plus and minus is not working. I just press it, it comes to 0.8".
