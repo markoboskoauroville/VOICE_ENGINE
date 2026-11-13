@@ -234,3 +234,6 @@ Marko: "The order is triangle, square, and then sub."
 > Fix the bug with voice engine. I am pressing subtitles ten fifty times. And nothing's happening. Subtitles are not displaying. Why this bug happened?
 
 **Status:** saved first (13.11.2026). Plan v41: self-heal after show (verify panels on screen within 0.5 s, else recreate once and log), rebuild panels on wake / screens wake / active space change; cause in LESSONS.md.
+
+## 13.11.2026
+"I have now wished to have more action buttons in my voice when the subtitle is there. I need arrows to speed up or slow down reading, and I also need simple skip buttons, like in any player, so that I can go to the next sentence quickly that's the last sentence, then. The next thing in queue is playing".

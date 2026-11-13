@@ -16,7 +16,7 @@ import AppKit
 
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
-let KW: CGFloat = 220            // the right keys' width (v38: three symbols, PAUSE, HIDE and STOP)
+let KW: CGFloat = 520            // the right keys' width (v38: three symbols, PAUSE, HIDE and STOP)
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
 let HIDE_NOTE = "community.auroville.subtitle.hide"     // the answer box says: the subtitle closes
@@ -29,7 +29,7 @@ func nscolour(_ hex: String, _ alpha: CGFloat = 1) -> NSColor? {
 
 struct SubWord: Decodable { var s: Int?; var e: Int?; var t: Double?; var d: Double? }
 struct Speaking: Decodable {
-    var on: Bool; var paused: Bool?; var phase: String?; var i: Int?; var n: Int?; var sentence: String?; var pos: Double?; var words: [SubWord]?
+    var on: Bool; var speed: Double?; var queue: Int?; var paused: Bool?; var phase: String?; var i: Int?; var n: Int?; var sentence: String?; var pos: Double?; var words: [SubWord]?
     var held: String?        // v21: why the engine holds this reading ('' when it does not)
 }
 
@@ -56,6 +56,13 @@ func subLog(_ m: String) {
     else { try? FileManager.default.createDirectory(atPath: (f as NSString).deletingLastPathComponent, withIntermediateDirectories: true); try? line.write(toFile: f, atomically: true, encoding: .utf8) }
 }
 
+/// v42: POST with a JSON body (speed arrows)
+func postJSON(_ path: String, _ body: String) {
+    var r = URLRequest(url: URL(string: VOICE_URL + path)!, timeoutInterval: 1.5)
+    r.httpMethod = "POST"; r.httpBody = Data(body.utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    URLSession.shared.dataTask(with: r).resume()
+}
+
 func post(_ path: String) {
     var r = URLRequest(url: URL(string: VOICE_URL + path)!)
     r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -66,6 +73,8 @@ func post(_ path: String) {
 
 final class KeyLabel: NSView {
     let text: String; let size: CGFloat; let action: () -> Void
+    var slot: CGFloat = 0        // v42: x inside the keys' group
+    var display: String?         // v42: the speed's text (1.0x), the name stays SPEED
     var symbol: String?          // v29: an SF Symbol (Apple's symbol font) instead of the word; the word stays its name
     init(_ text: String, _ size: CGFloat, _ frame: NSRect, symbol: String? = nil, _ action: @escaping () -> Void) {
         self.text = text; self.size = size; self.action = action; self.symbol = symbol; super.init(frame: frame)
@@ -94,7 +103,7 @@ final class KeyLabel: NSView {
         let a: [NSAttributedString.Key: Any] = [.font: NSFont(name: FONT, size: size) ?? .systemFont(ofSize: size),
                                                 .foregroundColor: NSColor(white: 0.92, alpha: 0.9), .paragraphStyle: p]
         let h = size * 1.3
-        (text as NSString).draw(in: NSRect(x: 0, y: (bounds.height - h) / 2, width: bounds.width, height: h), withAttributes: a)
+        ((display ?? text) as NSString).draw(in: NSRect(x: 0, y: (bounds.height - h) / 2, width: bounds.width, height: h), withAttributes: a)
     }
 }
 
@@ -155,11 +164,26 @@ final class ScreenSub {
         // on (the menu bar's SUB brings subtitles back). STOP (a square): the reading ends completely.
         // v38 (Marko, 8.11.2026: "There is a stop, there is a hide, but there is no pause to continue later"): PAUSE first
         // (POST /speak/pause holds the voice at the word being said; the same button then reads CONTINUE).
-        let right: [(String, String, CGFloat, () -> Void)] = [
-            ("PAUSE", "pause.fill", 0, { [weak engine] in engine?.togglePause() }),
-            ("HIDE", "captions.bubble.fill", 70, { [weak engine] in post("/speak/close"); engine?.hide() }),
-            ("STOP", "stop.fill", 140, { [weak engine] in engine?.hide(); stopAndExit() })]
-        for (t, sym, x, f) in right { band.addSubview(KeyLabel(t, 30, NSRect(x: x, y: 0, width: 64, height: 64), symbol: sym, f)) }
+        // v42 (Marko, 13.11.2026: "more action buttons ... arrows to speed up or slow down reading ... simple skip buttons,
+        // like in any player ... the last sentence, then the next thing in queue is playing"): one group in player order,
+        // mouse only: previous sentence, PAUSE, next sentence (on the last one: the next reading in the queue), skip to the
+        // next reading, speed - / speed / speed +, then HIDE and STOP.
+        let right: [(String, String?, CGFloat, CGFloat, () -> Void)] = [
+            ("PREVIOUS", "backward.end.fill", 0, 48, { post("/speak/previous") }),
+            ("PAUSE", "pause.fill", 48, 48, { [weak engine] in engine?.togglePause() }),
+            ("NEXT", "forward.end.fill", 96, 48, { post("/speak/next") }),
+            ("SKIP", "forward.fill", 144, 48, { post("/speak/skip") }),
+            ("SLOWER", "minus.circle", 212, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
+            ("SPEED", nil, 256, 64, {}),
+            ("FASTER", "plus.circle", 320, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
+            ("HIDE", "captions.bubble.fill", 392, 48, { post("/speak/close"); engine?.hide() }),
+            ("STOP", "stop.fill", 444, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
+        for (t, sym, x, w, f) in right {
+            let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 64), symbol: sym, f)
+            k.slot = x
+            if t == "SPEED" { k.display = "1.0x" }
+            band.addSubview(k)
+        }
     }
     var keyViews: [KeyLabel] { band.subviews.compactMap { $0 as? KeyLabel } }
 
@@ -230,8 +254,7 @@ final class SubtitleEngine {
     // the right keys are laid at the screen's right edge, the left ones at its left
     func placeKeys(_ s: ScreenSub) {
         let w = s.screen.visibleFrame.width, keys = s.keyViews
-        let xs: [CGFloat] = [0, 70, 140]
-        for (i, k) in keys.enumerated() where i < xs.count { k.frame.origin.x = w - KW - 12 + xs[i] }
+        for k in keys { k.frame.origin.x = w - KW - 12 + k.slot }
     }
 
     func open() {
@@ -303,7 +326,7 @@ final class SubtitleEngine {
         text = t; words = ws; lit = -2
         conf = SubtitleSettings.load()                 // the settings window's changes, live
         for s in subs { s.layout(conf, t); placeKeys(s) }
-        paintPause()
+        paintPause(); paintSpeed()
         paint(-1)
     }
     func resize(_ step: Double) {
@@ -390,11 +413,21 @@ final class SubtitleEngine {
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         URLSession.shared.dataTask(with: r).resume()
     }
+    var speed = 1.0
+    func nudgeSpeed(_ d: Double) {
+        speed = max(0.8, min(1.6, (speed + d) * 10).rounded() / 10)
+        paintSpeed()
+        postJSON("/speak/rate", "{\"rate\": \(speed)}")
+    }
+    func paintSpeed() {
+        for s in subs { for k in s.keyViews where k.text == "SPEED" { k.display = String(format: "%.1fx", speed); k.needsDisplay = true } }
+    }
     func paintPause() {
         for s in subs { for k in s.keyViews where k.text == "PAUSE" { k.rename(pause.label, pause.symbol) } }
     }
     func heard(_ st: Speaking) {
         if pause.sync(st.paused ?? false) { paintPause() }
+        if let sp = st.speed, abs(sp - speed) > 0.01 { speed = sp; paintSpeed() }
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)
         if !following {
             // a reading began (or goes on after he clicked it away: then only a new reading brings it back)
