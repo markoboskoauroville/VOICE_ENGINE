@@ -16,7 +16,8 @@ import AppKit
 
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
-let KW: CGFloat = 520            // the right keys' width (v38: three symbols, PAUSE, HIDE and STOP)
+let KW: CGFloat = 0              // v43: no keys at the right any more; the group is one centred row under the text (alignment.md)
+let GW: CGFloat = 492            // the group's width: previous .. STOP
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
 let HIDE_NOTE = "community.auroville.subtitle.hide"     // the answer box says: the subtitle closes
@@ -188,7 +189,8 @@ final class ScreenSub {
         let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
         let lines = max(1, min(6, ceil(wide / (room * 0.92))))
-        let h = max(floor(lines * size * 1.22 + size * 0.7), 110)
+        let kh: CGFloat = 64 + 8          // v43: the keys' row under the text
+        let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh)
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
         if c.ypos >= 0 { y = ScreenSub.clampY(vf.minY + CGFloat(c.ypos) * vf.height - h / 2, h, vf) }   // v18: dragged
@@ -196,9 +198,9 @@ final class ScreenSub {
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
         band.fill = NSColor(white: CGFloat(c.grey) / 100, alpha: alpha)
-        band.textRect = NSRect(x: LW + 24, y: max(4, (h - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
+        band.textRect = NSRect(x: LW + 24, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
-        for k in keys { k.frame.origin.y = (h - 64) / 2 }                  // x: SubtitleEngine.placeKeys
+        for k in keys { k.frame.origin.y = h - 64 - 8 }                  // x: SubtitleEngine.placeKeys
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
@@ -247,7 +249,7 @@ final class SubtitleEngine {
     // the right keys are laid at the screen's right edge, the left ones at its left
     func placeKeys(_ s: ScreenSub) {
         let w = s.screen.visibleFrame.width, keys = s.keyViews
-        for k in keys { k.frame.origin.x = w - KW - 12 + k.slot }
+        for k in keys { k.frame.origin.x = floor((w - GW) / 2) + k.slot }
     }
 
     func open() {
