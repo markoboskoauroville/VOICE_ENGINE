@@ -205,7 +205,7 @@ final class ScreenSub {
         let pw = room + 48                  // the band: the column plus 24 each side
         let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
-        let lines = max(1, min(10, ceil(wide / (room * 0.92))))
+        _ = wide; let lines: CGFloat = 2            // v43: at most four words at a time: the band is two lines high, never jumping
         let kh: CGFloat = ROWH * 3 + 8    // v43: three rows of keys under the text
         let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh)
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
@@ -218,6 +218,15 @@ final class ScreenSub {
         band.textRect = NSRect(x: 24, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
         for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 2 }                  // x: SubtitleEngine.placeKeys
+    }
+    /// v43: the chunk's lines (1 or 2) put in the middle of the band's text part
+    func place(_ chunk: String, _ c: SubtitleSettings) {
+        let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
+        let wide = (chunk as NSString).size(withAttributes: [.font: font]).width
+        let room = band.textRect.width
+        let n = max(1, min(2, ceil(wide / (room * 0.92))))
+        let h = panel.frame.height, kh = ROWH * 3 + 8
+        band.textRect.origin.y = max(4, (h - kh - n * size * 1.22) / 2 - size * 0.08)
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
@@ -236,6 +245,7 @@ final class SubtitleEngine {
     var subs: [ScreenSub] = []
     var conf = SubtitleSettings.load()
     var text = ""; var words: [SubWord] = []; var lit = -2
+    var chunkOf: [Int] = []; var chunkRanges: [(Int, Int)] = []; var chunkIdx = 0   // v43: at most 4 words at a time
     var testTimer: Timer?; var lingerTimer: Timer?; var tick: Timer?
     var following = false; var polling = false
     var pollSince = Date()   // v23 (2.11.2026): a poll that never answered left `polling` true for ever: no blob, no subtitle, no ✕
@@ -310,6 +320,39 @@ final class SubtitleEngine {
         if on { bringBack() } else { drop() }          // v18: on brings it back at once, following or not
     }
 
+    /// v43 (Marko, 13.11.2026: "maximum 4 words at one time on the screen. That's it."): the sentence in chunks of at most four
+    /// words, broken at punctuation first, each clause split evenly (5 = 3+2, never one word stranded when 2+2 fits).
+    func makeChunks() {
+        chunkOf = []; chunkRanges = []
+        guard !words.isEmpty else { return }
+        let sc = Array(text.unicodeScalars)
+        var clauses: [[Int]] = [[]]
+        for (i, w) in words.enumerated() {
+            clauses[clauses.count - 1].append(i)
+            if let e = w.e, e > 0, e <= sc.count, ",;:.!?—–".unicodeScalars.contains(sc[e - 1]) { clauses.append([]) }
+        }
+        for cl in clauses where !cl.isEmpty {
+            let parts = Int(ceil(Double(cl.count) / 4.0))
+            var at = 0
+            for p in 0..<parts {
+                let size = (cl.count - at + (parts - p) - 1) / (parts - p)      // even: the bigger parts first
+                let part = Array(cl[at..<(at + size)]); at += size
+                chunkRanges.append((part.first!, part.last!))
+            }
+        }
+        // a stranded single word joins its neighbour when that stays within four
+        var j = 0
+        while j < chunkRanges.count {
+            let (a, b) = chunkRanges[j]
+            if a == b, chunkRanges.count > 1 {
+                if j > 0, chunkRanges[j - 1].1 - chunkRanges[j - 1].0 + 1 + 1 <= 4 { chunkRanges[j - 1].1 = b; chunkRanges.remove(at: j); continue }
+                if j + 1 < chunkRanges.count, chunkRanges[j + 1].1 - chunkRanges[j + 1].0 + 1 + 1 <= 4 { chunkRanges[j + 1].0 = a; chunkRanges.remove(at: j); continue }
+            }
+            j += 1
+        }
+        chunkOf = Array(repeating: 0, count: words.count)
+        for (ci, r) in chunkRanges.enumerated() { for i in r.0...r.1 { chunkOf[i] = ci } }
+    }
     func styled(_ s: ScreenSub, _ k: Int) -> NSAttributedString {
         let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: s.size) ?? .systemFont(ofSize: s.size)
         let p = NSMutableParagraphStyle(); p.alignment = .center; p.lineBreakMode = .byWordWrapping
@@ -319,13 +362,25 @@ final class SubtitleEngine {
         // NSShadow's offset is in screen space (not flipped with the view): a negative height moves it down.
         let sh = NSShadow(); sh.shadowColor = NSColor.black; sh.shadowBlurRadius = 0
         let off = max(2, round(s.size * 0.07)); sh.shadowOffset = NSSize(width: off, height: -off)
-        let a = NSMutableAttributedString(string: text, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p, .shadow: sh])
+        // v43: only the chunk holding the word being said (the first chunk before the first word, the last one stays at the end)
+        let scalars = Array(text.unicodeScalars)
+        var base = 0, shown = text
+        if !chunkRanges.isEmpty {
+            if k >= 0, k < chunkOf.count { chunkIdx = chunkOf[k] }
+            chunkIdx = min(max(chunkIdx, 0), chunkRanges.count - 1)
+            let r = chunkRanges[chunkIdx]
+            if let a = words[r.0].s, let b = words[r.1].e, a >= 0, b <= scalars.count, a < b {
+                base = a; shown = String(String.UnicodeScalarView(scalars[a..<b]))
+            }
+        }
+        s.place(shown, conf)
+        let a = NSMutableAttributedString(string: shown, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p, .shadow: sh])
         if k >= 0, k < words.count, let st = words[k].s, let en = words[k].e {
             // the server counts characters (code points), NSString counts UTF-16: convert
-            let scalars = Array(text.unicodeScalars)
-            if st >= 0, en <= scalars.count, st < en {
-                let pre = String(String.UnicodeScalarView(scalars[0..<st])).utf16.count
-                let len = String(String.UnicodeScalarView(scalars[st..<en])).utf16.count
+            if st >= base, en <= base + shown.unicodeScalars.count, st < en {
+                let sc2 = Array(shown.unicodeScalars)
+                let pre = String(String.UnicodeScalarView(sc2[0..<(st - base)])).utf16.count
+                let len = String(String.UnicodeScalarView(sc2[(st - base)..<(en - base)])).utf16.count
                 var at: [NSAttributedString.Key: Any] = [.foregroundColor: nscolour(conf.word) ?? nscolour("#FF3B30")!]
                 if let bg = nscolour(conf.wordbg, 0.9) { at[.backgroundColor] = bg }
                 a.addAttributes(at, range: NSRange(location: pre, length: len))
@@ -335,7 +390,8 @@ final class SubtitleEngine {
     }
     func paint(_ k: Int) { for s in subs { s.band.text = styled(s, k); s.band.needsDisplay = true } }
     func show(_ t: String, _ ws: [SubWord]) {
-        text = t; words = ws; lit = -2
+        text = t; words = ws; lit = -2; chunkIdx = 0
+        makeChunks()
         conf = SubtitleSettings.load()                 // the settings window's changes, live
         for s in subs { s.layout(conf, t); placeKeys(s) }
         paintPause(); paintSpeed()
