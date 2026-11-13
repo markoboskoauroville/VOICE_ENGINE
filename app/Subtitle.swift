@@ -46,7 +46,7 @@ func stopAndExit() {
         NSApp.terminate(nil)
     } }
     var r = URLRequest(url: URL(string: VOICE_URL + "/speak/stop")!, timeoutInterval: 1.5)
-    r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    r.httpMethod = "POST"; r.httpBody = Data("{\"clear\": true}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")   // v43: STOP ends the reading and the queue
     URLSession.shared.dataTask(with: r) { _, _, _ in finish() }.resume()
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { finish() }
 }
@@ -186,7 +186,7 @@ final class ScreenSub {
             ("SLOWER", "minus.circle", 1, 0, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
             ("SPEED", nil, 1, 44, 64, {}),
             ("FASTER", "plus.circle", 1, 108, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
-            ("HIDE", "captions.bubble.fill", 2, 0, 56, { [weak engine] in post("/speak/close"); engine?.hide() }),
+            ("HIDE", "captions.bubble.fill", 2, 0, 56, { [weak engine] in engine?.hide() }   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)),
             ("STOP", "stop.fill", 2, 56, 56, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, row, x, w, f) in right {
             let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 48), symbol: sym, f)
