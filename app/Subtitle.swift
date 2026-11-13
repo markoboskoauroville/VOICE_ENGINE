@@ -331,14 +331,32 @@ final class SubtitleEngine {
             clauses[clauses.count - 1].append(i)
             if let e = w.e, e > 0, e <= sc.count, ",;:.!?—–".unicodeScalars.contains(sc[e - 1]) { clauses.append([]) }
         }
+        // phrase boundaries (research, 13.11.2026): never break after an article, preposition or conjunction ("the | drum",
+        // "on | the chair"); a natural 2-4 word phrase is preferred; the cost is minimal for few, balanced chunks.
+        let binders: Set<String> = ["a", "an", "the", "of", "to", "in", "on", "at", "for", "with", "by", "from", "as", "into", "onto",
+                                    "and", "or", "but", "that", "than", "if", "my", "your", "his", "her", "its", "our", "their", "this",
+                                    "these", "those", "is", "are", "was", "be", "not", "no", "so", "about", "over", "under", "through"]
+        func binder(_ i: Int) -> Bool {
+            guard let st = words[i].s, let en = words[i].e, st >= 0, en <= sc.count, st < en else { return false }
+            let w = String(String.UnicodeScalarView(sc[st..<en])).lowercased().trimmingCharacters(in: .punctuationCharacters)
+            return binders.contains(w)
+        }
         for cl in clauses where !cl.isEmpty {
-            let parts = Int(ceil(Double(cl.count) / 4.0))
-            var at = 0
-            for p in 0..<parts {
-                let size = (cl.count - at + (parts - p) - 1) / (parts - p)      // even: the bigger parts first
-                let part = Array(cl[at..<(at + size)]); at += size
-                chunkRanges.append((part.first!, part.last!))
-            }
+            let n = cl.count
+            var best = [Double](repeating: 1e9, count: n + 1), from = [Int](repeating: 0, count: n + 1)
+            best[0] = 0
+            if n >= 1 { for e in 1...n {
+                for L in 1...min(4, e) {
+                    let st = e - L
+                    guard best[st] < 1e9 else { continue }
+                    var c = 10.0 + Double(4 - L) * 0.6 + (L == 1 && n > 1 ? 12 : 0)
+                    if e < n, binder(cl[e - 1]) { c += 30 }                   // a break after an article or preposition
+                    if best[st] + c < best[e] { best[e] = best[st] + c; from[e] = st }
+                }
+            } }
+            var cuts: [(Int, Int)] = []; var e = n
+            while e > 0 { let st = from[e]; cuts.append((cl[st], cl[e - 1])); e = st }
+            chunkRanges.append(contentsOf: cuts.reversed())
         }
         // a stranded single word joins its neighbour when that stays within four
         var j = 0
