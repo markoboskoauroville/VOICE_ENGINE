@@ -143,6 +143,7 @@ final class BandView: NSView {
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .resizeUpDown) }
     override func mouseDown(with e: NSEvent) {
+        onDragEnd()          // v45: a drag whose release was lost is saved now
         grab = NSEvent.mouseLocation.y; startCentre = window?.frame.midY ?? 0; moved = false
     }
     override func mouseDragged(with e: NSEvent) {
@@ -473,11 +474,17 @@ final class SubtitleEngine {
         let f = min(max((centreY - vf.minY) / vf.height, 0), 1)
         dragFraction = f
         for x in subs { x.moveTo(fraction: f) }
+        // v45: the position is saved while dragging (at most every 0.1 s), so a release that lands in another view, or never
+        // arrives, cannot lose it; dragDone() writes the last value
+        let now = Date().timeIntervalSince1970
+        if now - lastDragSave > 0.1 { lastDragSave = now; saveYpos(f) }
     }
+    var lastDragSave = 0.0
+    func saveYpos(_ f: CGFloat) { var c = SubtitleSettings.load(); c.ypos = Double(f); c.save(); conf = c }
     func dragDone() {
         guard let f = dragFraction else { return }
         dragFraction = nil
-        var c = SubtitleSettings.load(); c.ypos = Double(f); c.save(); conf = c
+        saveYpos(f)
     }
     /// v18: the blob brings the subtitle back while she reads: CC on, dismissal forgotten, following again
     func bringBack() {

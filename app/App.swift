@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 44
+let VERSION = 45
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -95,7 +95,7 @@ let BG_SWATCHES: [(String, String)] = [("NONE", ""), ("YELLOW", "#F5E663"), ("RE
 let SWATCHES: [(String, String)] = [("ORANGE", "#E8A33D"), ("WHITE", "#FFFFFF"), ("YELLOW", "#F5E663"), ("SAND", "#F2DDB4"), ("GREEN", "#33D17A"), ("CYAN", "#7FDBFF")]
 
 final class Model: ObservableObject {
-    @Published var s = SubtitleSettings.load() { didSet { if s != oldValue && !outside { s.save(); if s.voice == oldValue.voice { schedulePreview() } } } }
+    @Published var s = SubtitleSettings.load() { didSet { if s != oldValue && !outside { var t = s; if s.ypos == oldValue.ypos { t.ypos = SubtitleSettings.load().ypos }; t.save();   /* v45: a stale copy never overwrites the position dragged since */ if s.voice == oldValue.voice { schedulePreview() } } } }
     private var pending: DispatchWorkItem?
     private var outside = false
     private var watch: Timer?
