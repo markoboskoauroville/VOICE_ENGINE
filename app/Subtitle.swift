@@ -56,13 +56,6 @@ func subLog(_ m: String) {
     else { try? FileManager.default.createDirectory(atPath: (f as NSString).deletingLastPathComponent, withIntermediateDirectories: true); try? line.write(toFile: f, atomically: true, encoding: .utf8) }
 }
 
-/// v42: POST with a JSON body (speed arrows)
-func postJSON(_ path: String, _ body: String) {
-    var r = URLRequest(url: URL(string: VOICE_URL + path)!, timeoutInterval: 1.5)
-    r.httpMethod = "POST"; r.httpBody = Data(body.utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    URLSession.shared.dataTask(with: r).resume()
-}
-
 func post(_ path: String) {
     var r = URLRequest(url: URL(string: VOICE_URL + path)!)
     r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
