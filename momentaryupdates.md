@@ -228,3 +228,9 @@ Marko: "The order is triangle, square, and then sub."
 > Please repeat the last voice: I was not here and now you need to update my voice engine. After the voice is played, you keep the player in my menu bar and then I can replay the message. If I press stop on a message which is not playing, then this menu bar player disappears.
 
 **Status:** saved first (9.11.2026). Plan v40: voiced.py (MANTRA_VOICE) writes every finished reading to ~/.voice_engine/last/ (record JSON + copied audio, newest 3 kept); the Engine (app/Replay.swift) shows a replay item (play, becomes stop while playing) and a stop item in the menu bar; stop while idle removes both until the next message. Replay goes through POST /speak with the saved clips, so the subtitles run again.
+
+## 13.11.2026: subtitles never appear (bug)
+
+> Fix the bug with voice engine. I am pressing subtitles ten fifty times. And nothing's happening. Subtitles are not displaying. Why this bug happened?
+
+**Status:** saved first (13.11.2026). Plan v41: self-heal after show (verify panels on screen within 0.5 s, else recreate once and log), rebuild panels on wake / screens wake / active space change; cause in LESSONS.md.
