@@ -186,7 +186,7 @@ final class ScreenSub {
             ("SLOWER", "minus.circle", 1, 0, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
             ("SPEED", nil, 1, 44, 64, {}),
             ("FASTER", "plus.circle", 1, 108, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
-            ("HIDE", "captions.bubble.fill", 2, 0, 56, { [weak engine] in engine?.hide() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
+            ("HIDE", "captions.bubble.fill", 2, 0, 56, { [weak engine] in engine?.hideByClick() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
             ("STOP", "stop.fill", 2, 56, 56, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, row, x, w, f) in right {
             let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 48), symbol: sym, f)
@@ -421,6 +421,8 @@ final class SubtitleEngine {
         paint(lit)
     }
 
+    /// v43: HIDE (the button): the subtitle goes and stays gone until the reading ends; the voice reads on
+    func hideByClick() { dismissed = true; hide() }
     func hide() {
         tick?.invalidate(); tick = nil
         lingerTimer?.invalidate(); lingerTimer = nil
