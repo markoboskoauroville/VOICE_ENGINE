@@ -410,7 +410,7 @@ final class SubtitleEngine {
     }
     var speed = 1.0
     func nudgeSpeed(_ d: Double) {
-        speed = max(0.8, min(1.6, (speed + d) * 10).rounded() / 10)
+        speed = max(0.8, min(1.6, (((speed + d) * 10).rounded()) / 10))
         paintSpeed()
         postJSON("/speak/rate", "{\"rate\": \(speed)}")
     }
