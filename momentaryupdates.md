@@ -244,3 +244,8 @@ Marko: "The order is triangle, square, and then sub."
 "exactly the same for the controls as for the subtitles. They need to have hard shadow, so they follow the same design rules."
 "for subtitles, follow the rule from TikTok, Instagram, etc. We want maximum 4 words at one time on the screen. That is it. 4 words maximum"
 "I want to be able to drag them on the screen up and down only, not to the side, and they remember its last position and they keep it there."
+
+## 14.11.2026 (v46): speak on every Voice Engine, a speaker per engine
+"we need to update the voice engine Open Voice Engine. I want to see all the Voice Engine available to tell skill. And next to each engine, there will be a speaker icon. If I enable that speaker icon, you are speaking to that engine from this computer. Also in the list is local computer. I can easily disable the local computer and talk only. Connection Keeper version 61 is installed, and I tested. I can talk only. Actually, you can talk only. To enable devices, so I can also disable the local computer not to be used in the speaking of anything."
+
+**Status:** saved first (14.11.2026). Plan v46: a SPEAKS ON list in the window (This Mac + every phone with Voice Engine Android), a speaker per row; ~/.voice/outputs.json read by langsay, phonesay and voiced, replacing ~/.voice/route.
