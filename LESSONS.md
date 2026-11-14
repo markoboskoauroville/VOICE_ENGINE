@@ -70,3 +70,6 @@ PauseSync (press, 1.5 s guard, sync from the voice, label, symbol, request) now 
   and is no taller than the screen; check with a full-window screencapture after every new row.
 - SwiftUI ignored `idealHeight` on a ScrollView in an NSHostingController (opened at 388 px); set the window's content size
   in `open()` instead.
+
+## 14.11.2026: drops when sped up
+The sound is played by MANTRA_VOICE's reader, not by this app; the rate arrow only POSTs /speak/rate. Fixed there (see its LESSONS.md): speed-scaled head start, 6 s buffer, stretch done ahead.

@@ -261,4 +261,4 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 14.11.2026 (v50): no drops when the voice is sped up
 "star new agent to fix voice engine whe i speed up voice it drops plaase buld huge buffer so no drops i accouring"
 
-**Status:** OPEN. Plan: measure at 1.0/1.5/2.0x, find the cause, render ahead / big buffer, measure again.
+**Status:** DONE 14.11.2026 in MANTRA_VOICE voiced.py (the player lives there, no app change, still v49): 6 s buffer, stretch done ahead, head start scaled by speed. Measured maker-wait silence before about 10 / 3.6 / 13 s at 1.0 / 1.6 / 2.0x, after 0 / 0 / 0.
