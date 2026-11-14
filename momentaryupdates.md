@@ -262,3 +262,7 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "star new agent to fix voice engine whe i speed up voice it drops plaase buld huge buffer so no drops i accouring"
 
 **Status:** DONE 14.11.2026 in MANTRA_VOICE voiced.py (the player lives there, no app change, still v49): 6 s buffer, stretch done ahead, head start scaled by speed. Measured maker-wait silence before about 10 / 3.6 / 13 s at 1.0 / 1.6 / 2.0x, after 0 / 0 / 0.
+
+## 14.11.2026: who is talking (v50)
+"That engine needs, when it is talking, the message at the top to be written, not read ... at the top it should be the session name, so I know who is talking." (saved first in MANTRA_VOICE/momentaryupdates.md)
+**Status:** DONE v50: the subtitle band shows (SOURCE) at its top from GET /speaking `from`; the updater asks at start.

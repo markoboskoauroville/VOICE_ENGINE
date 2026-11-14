@@ -167,3 +167,5 @@ v41-v45 (13.11.2026): subtitle self-heals (verify on screen, rebuild once, rebui
 - v49 TABS: the first row (ON OFF · VOICE ENGINE · TOP ✕) stays; tabs ENGINE · SPEAKERS · VOICE · SUBTITLES · BACKGROUND
   (`TABS`, UserDefaults "tab", AX ids `tab-<name>`); `SwitchRow(header:parts:)`.
 - **Next version:** add the updater (MANTRA_MANIFEST kits/mac-updater, rule update-at-start.md); v46–v49 do not have it yet.
+
+**v50 (14.11.2026): who is talking.** The player is the SUBTITLE BAND (keys PREVIOUS, PAUSE, NEXT, SKIP, speed, HIDE, STOP), not the blob (Blob.swift has not shown since v24). A strip at the band top writes `(SOURCE)` from GET /speaking `from` (MANTRA_VOICE; POST /speak `from`, langsay sends the Claude Code session name): two lines, wraps, smaller and dimmer than the subtitle, hard shadow, never spoken; kept while the last sentence lingers. Also Updater.swift (checkAtStart, repo VOICE_ENGINE) and `APP_NAME`.

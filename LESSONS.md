@@ -73,3 +73,6 @@ PauseSync (press, 1.5 s guard, sync from the voice, label, symbol, request) now 
 
 ## 14.11.2026: drops when sped up
 The sound is played by MANTRA_VOICE's reader, not by this app; the rate arrow only POSTs /speak/rate. Fixed there (see its LESSONS.md): speed-scaled head start, 6 s buffer, stretch done ahead.
+
+## 14.11.2026: the "blob" Marko means is the subtitle band
+Since v24 the blob does not show; pause, previous, next, stop live on the subtitle band (Subtitle.swift, ScreenSub). Look at which window the controls are in before adding UI. Window ids change when the band is rebuilt: look the id up again before every `screencapture -l`. A `langsay` started as `( ... &)` loses its parent chain (reparented to launchd), so it cannot find its session name: start it plainly with `&`.
