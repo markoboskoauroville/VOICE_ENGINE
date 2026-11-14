@@ -132,6 +132,9 @@ final class BandView: NSView {
     var fill = NSColor.clear
     var text = NSAttributedString()
     var textRect = NSRect.zero
+    // v50: who is talking, in parentheses at the band's top: written, never spoken, wrapped, smaller and dimmer than the subtitle
+    var source = "" { didSet { if source != oldValue { needsDisplay = true } } }
+    var srcRect = NSRect.zero
     var onClick: () -> Void = {}
     // v18 (Marko, 31.10.2026: "I clicked on the subtitle itself and it disappeared ... add a feature that I can click on the
     // subtitle and pull it vertically only on the screen, wherever I want to, with my mouse while it's reading"): a drag
@@ -161,7 +164,16 @@ final class BandView: NSView {
     override func draw(_ r: NSRect) {
         fill.setFill(); bounds.fill()
         text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
+        if source.isEmpty { return }
+        let c = SubtitleEngine.shared.conf
+        let fs = srcFont(size: srcRect.height), p = NSMutableParagraphStyle(); p.alignment = .center
+        let col = (nscolour(c.colour) ?? NSColor(white: 0.92, alpha: 1)).withAlphaComponent(0.62)
+        let f = NSFont.monospacedSystemFont(ofSize: fs, weight: .regular)
+        let s = "(" + source + ")" as NSString
+        s.draw(with: srcRect.offsetBy(dx: 2, dy: 2), options: [.usesLineFragmentOrigin], attributes: [.font: f, .foregroundColor: NSColor.black, .paragraphStyle: p])
+        s.draw(with: srcRect, options: [.usesLineFragmentOrigin], attributes: [.font: f, .foregroundColor: col, .paragraphStyle: p])
     }
+    func srcFont(size h: CGFloat) -> CGFloat { max(11, (h - 6) / 2 / 1.25) }
 }
 
 final class ScreenSub {
@@ -221,7 +233,8 @@ final class ScreenSub {
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
         _ = wide; let lines: CGFloat = 2            // v43: at most four words at a time: the band is two lines high, never jumping
         let kh: CGFloat = ROWH * 3 + 8    // v43: three rows of keys under the text
-        let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh)
+        let sh = ceil(max(11, size * 0.34) * 1.25 * 2) + 6      // v50: the strip at the top for who is talking: two lines, wraps, never cut
+        let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh) + sh
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
         if c.ypos >= 0 { y = ScreenSub.clampY(vf.minY + CGFloat(c.ypos) * vf.height - h / 2, h, vf) }   // v18: dragged
@@ -229,7 +242,8 @@ final class ScreenSub {
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
         band.fill = NSColor(white: CGFloat(c.grey) / 100, alpha: alpha)
-        band.textRect = NSRect(x: 24, y: max(4, (h - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
+        band.srcRect = NSRect(x: 24, y: 4, width: room, height: sh - 4)
+        band.textRect = NSRect(x: 24, y: sh + max(4, (h - sh - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
         for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 2 }                  // x: SubtitleEngine.placeKeys
     }
@@ -239,8 +253,8 @@ final class ScreenSub {
         let wide = (chunk as NSString).size(withAttributes: [.font: font]).width
         let room = band.textRect.width
         let n = max(1, min(2, ceil(wide / (room * 0.92))))
-        let h = panel.frame.height, kh = ROWH * 3 + 8
-        band.textRect.origin.y = max(4, (h - kh - n * size * 1.22) / 2 - size * 0.08)
+        let h = panel.frame.height, kh = ROWH * 3 + 8, sh = band.srcRect.height + 4
+        band.textRect.origin.y = sh + max(4, (h - sh - kh - n * size * 1.22) / 2 - size * 0.08)
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
@@ -536,6 +550,7 @@ final class SubtitleEngine {
     func heard(_ st: Speaking) {
         if pause.sync(st.paused ?? false) { paintPause() }
         if let sp = st.speed, abs(sp - speed) > 0.01 { speed = sp; paintSpeed() }
+        if st.on, let f = st.from { for s in subs { s.band.source = f } }     // v50: who is talking, kept while the last sentence lingers
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)
         if !following {
             // a reading began (or goes on after he clicked it away: then only a new reading brings it back)

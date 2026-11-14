@@ -6,7 +6,7 @@
 // the controls are named for what they do (SUBTITLES, BACKGROUND, MAIN SCREEN); "OFF, ANSWERS NOT READ" is gone (it fed
 // only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
 //
-// v50 (14.11.2026, Marko: "when it is talking, the message at the top to be written, not read ... where from is this talk coming? ... the session name, so I know who is talking"): the blob shows (SOURCE) at its top, from GET /speaking `from` (POST /speak `from`, langsay sends the Claude Code session name); never spoken. And it now asks to update at start (Updater.swift).
+// v50 (14.11.2026, Marko: "when it is talking, the message at the top to be written, not read ... where from is this talk coming? ... the session name, so I know who is talking"): the subtitle band (the player: PREVIOUS, PAUSE, NEXT ... STOP) shows (SOURCE) at its top, from GET /speaking `from` (POST /speak `from`, langsay sends the Claude Code session name); never spoken. And it now asks to update at start (Updater.swift).
 // v26 (2.11.2026): the order ▶ ■ SUB. v25: SUB beside ▶ ■ turns the subtitles on/off, off by default. v24: no blob; while she reads ▶ (pause/play) and ■ (stop) stand in the menu bar (MenuControls.swift). v23: a stuck GET /speaking poll is dropped after 3 s, so the blob (✕ stops her) always comes. v22: the notice as wide as its words. v21 (1.11.2026): a held reading says why under the blob, with READ ANYWAY (Blob.swift showHeld); the engine holds
 // only for Voice to Text (Mantra) and Speechify listening to him (MANTRA_VOICE voiced.py MicGuard.LISTENERS).
 //
