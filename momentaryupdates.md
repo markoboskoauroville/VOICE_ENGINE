@@ -252,3 +252,8 @@ Marko: "The order is triangle, square, and then sub."
 
 ## 14.11.2026 (v47)
 v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. v47: the rows scroll, the window fits the screen and can be resized.
+
+## 14.11.2026 (v49): tabs
+"please change this user interface into tabs because there are too many things on the screen at the moment. So give me the tabs for each section of the user interface"
+
+**Status:** saved first. Plan v49: the first row (ON OFF VOICE ENGINE TOP ✕) stays; under it the tabs ENGINE · SPEAKERS · VOICE · SUBTITLES · BACKGROUND, the last tab remembered.
