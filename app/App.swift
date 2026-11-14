@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 46
+let VERSION = 47
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -464,6 +464,15 @@ struct Settings: View {
     @StateObject var sw = Switch()
     @StateObject var outputs = Outputs()
     var body: some View {
+        // v47 (14.11.2026): the rows scroll inside a window no taller than the screen; v46's SPEAKS ON made the content taller
+        // than the BenQ and the window was cut at the top (the switch and the speakers were above the screen's edge)
+        ScrollView(.vertical, showsIndicators: true) { content }
+            .frame(minWidth: 560, idealWidth: 560, minHeight: 360,
+                   idealHeight: min(1460, (NSScreen.main?.visibleFrame.height ?? 900) - 60))
+            .background(INK)
+            .preferredColorScheme(.dark)
+    }
+    var content: some View {
         VStack(alignment: .leading, spacing: 18) {
             SwitchRow(sw: sw)
             Divider().overlay(GREY.opacity(0.35))
@@ -567,10 +576,9 @@ struct Settings: View {
             }
         }
         .padding(24)
-        .frame(width: 560)
+        .frame(minWidth: 560, maxWidth: .infinity)
         .background(INK)
         .tint(AMBER)
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -687,7 +695,8 @@ final class Delegate: NSObject, NSApplicationDelegate {
     }
     func open<V: View>(_ vc: NSHostingController<V>, _ title: String) {
         let w = NSWindow(contentViewController: vc)
-        w.title = title; w.styleMask = [.titled, .closable, .miniaturizable]; w.isReleasedWhenClosed = false
+        w.title = title; w.styleMask = [.titled, .closable, .miniaturizable, .resizable]; w.isReleasedWhenClosed = false
+        if let f = NSScreen.main?.visibleFrame, w.frame.height > f.height - 20 { w.setContentSize(NSSize(width: w.frame.width, height: f.height - 60)) }
         w.center(); w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
         window = w
     }
