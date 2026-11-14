@@ -122,6 +122,9 @@ final class Blob {
     var panel: NSPanel?
     let wave = WaveView(frame: NSRect(x: 40, y: 0, width: 74, height: BLOB_H))
     let name = NSTextField(labelWithString: "")
+    // v50: who is talking, in parentheses at the TOP of the blob (written, never spoken); wraps, smaller and dimmer than the name line
+    let source = NSTextField(wrappingLabelWithString: "")
+    var box: NSView?; var pill: NSView?; var srcText = ""
     var pauseKey: BlobButton!, ccKey: BlobButton!
     var timer: Timer?
     var asking = false
@@ -164,6 +167,12 @@ final class Blob {
         name.textColor = NSColor(white: 1, alpha: 0.75)
         let sh = NSShadow(); sh.shadowColor = .black; sh.shadowBlurRadius = 3; name.shadow = sh
         box.addSubview(name)
+        source.isBezeled = false; source.drawsBackground = false; source.isEditable = false; source.isSelectable = false
+        source.alignment = .center; source.font = .monospacedSystemFont(ofSize: 9, weight: .regular)
+        source.textColor = NSColor(white: 1, alpha: 0.6); source.lineBreakMode = .byWordWrapping
+        source.setAccessibilityIdentifier("source-line")
+        let sh2 = NSShadow(); sh2.shadowColor = .black; sh2.shadowBlurRadius = 3; source.shadow = sh2
+        box.addSubview(source); self.box = box; self.pill = pill
         p.contentView = box
         p.setFrameOrigin(savedOrigin())
         return p
@@ -218,6 +227,26 @@ final class Blob {
             DispatchQueue.main.async { self?.asking = false; self?.wave.take(b) }
         }.resume()
     }
+    // v50: the line grows the window upward; the pill and the name stay where they are, nothing is cut (wraps at the blob's width)
+    func setSource(_ s: String?) {
+        let t = (s ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if t == srcText || panel == nil { return }
+        srcText = t
+        guard let p = panel, let box = box else { return }
+        var h: CGFloat = 0
+        if t.isEmpty { source.stringValue = ""; source.isHidden = true }
+        else {
+            source.stringValue = "(" + t + ")"; source.isHidden = false
+            source.preferredMaxLayoutWidth = BLOB_W - 8
+            let sz = source.sizeThatFits(NSSize(width: BLOB_W - 8, height: 200))
+            h = ceil(sz.height) + 2
+            source.frame = NSRect(x: 4, y: BLOB_H + NAME_H + 1, width: BLOB_W - 8, height: h)
+        }
+        let o = p.frame.origin
+        p.setContentSize(NSSize(width: BLOB_W, height: BLOB_H + NAME_H + h))
+        box.frame = NSRect(x: 0, y: 0, width: BLOB_W, height: BLOB_H + NAME_H + h)
+        p.setFrameOrigin(o)
+    }
     func hide() {
         timer?.invalidate(); timer = nil
         panel?.orderOut(nil)
@@ -231,6 +260,7 @@ final class Blob {
             paused = st.paused ?? false
             pauseKey?.symbol = paused ? "play.fill" : "pause.fill"
             show()
+            setSource(st.from)
             wave.moving = !paused && (st.pos ?? -1) >= 0
             if let why = st.held, !why.isEmpty { showHeld(why) } else { hideHeld() }
         } else if panel?.isVisible == true {

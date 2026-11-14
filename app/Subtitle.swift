@@ -32,6 +32,7 @@ func nscolour(_ hex: String, _ alpha: CGFloat = 1) -> NSColor? {
 struct SubWord: Decodable { var s: Int?; var e: Int?; var t: Double?; var d: Double? }
 struct Speaking: Decodable {
     var on: Bool; var speed: Double?; var queue: Int?; var paused: Bool?; var phase: String?; var i: Int?; var n: Int?; var sentence: String?; var pos: Double?; var words: [SubWord]?
+    var from: String?        // v50: who is talking (a Claude Code session name), written at the top of the blob
     var held: String?        // v21: why the engine holds this reading ('' when it does not)
 }
 

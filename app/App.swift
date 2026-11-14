@@ -6,6 +6,7 @@
 // the controls are named for what they do (SUBTITLES, BACKGROUND, MAIN SCREEN); "OFF, ANSWERS NOT READ" is gone (it fed
 // only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
 //
+// v50 (14.11.2026, Marko: "when it is talking, the message at the top to be written, not read ... where from is this talk coming? ... the session name, so I know who is talking"): the blob shows (SOURCE) at its top, from GET /speaking `from` (POST /speak `from`, langsay sends the Claude Code session name); never spoken. And it now asks to update at start (Updater.swift).
 // v26 (2.11.2026): the order ▶ ■ SUB. v25: SUB beside ▶ ■ turns the subtitles on/off, off by default. v24: no blob; while she reads ▶ (pause/play) and ■ (stop) stand in the menu bar (MenuControls.swift). v23: a stuck GET /speaking poll is dropped after 3 s, so the blob (✕ stops her) always comes. v22: the notice as wide as its words. v21 (1.11.2026): a held reading says why under the blob, with READ ANYWAY (Blob.swift showHeld); the engine holds
 // only for Voice to Text (Mantra) and Speechify listening to him (MANTRA_VOICE voiced.py MicGuard.LISTENERS).
 //
@@ -23,7 +24,8 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 49
+let VERSION = 50
+let APP_NAME = "Voice Engine (Mantra)"
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -702,6 +704,7 @@ final class Delegate: NSObject, NSApplicationDelegate {
         // `--test-subtitle "text"`: the subtitle shows that text for 8 s (a check without a reading)
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "--test-subtitle") { Owner.shared.testing = true; SubtitleEngine.shared.test(i + 1 < a.count ? a[i + 1] : "Marko, this is a test of the subtitle.", 8); return }
+        Updater.checkAtStart()                  // v50: asks to update at start (MANTRA_MANIFEST kits/mac-updater)
         Owner.shared.begin()                    // v31: this app IS the engine: the voice comes and goes with it
         // v9 (18.10.2026): brought back by the star at login (--login), the subtitle runs and the window waits
         if a.contains("--login") { return }
