@@ -257,3 +257,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "please change this user interface into tabs because there are too many things on the screen at the moment. So give me the tabs for each section of the user interface"
 
 **Status:** DONE v49 (14.11.2026): built green, installed, every tab pressed by AX and seen in a screenshot. Plan was v49: the first row (ON OFF VOICE ENGINE TOP ✕) stays; under it the tabs ENGINE · SPEAKERS · VOICE · SUBTITLES · BACKGROUND, the last tab remembered.
+
+## 14.11.2026 (v50): no drops when the voice is sped up
+"star new agent to fix voice engine whe i speed up voice it drops plaase buld huge buffer so no drops i accouring"
+
+**Status:** OPEN. Plan: measure at 1.0/1.5/2.0x, find the cause, render ahead / big buffer, measure again.
