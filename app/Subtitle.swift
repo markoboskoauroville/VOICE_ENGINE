@@ -110,7 +110,7 @@ final class KeyLabel: NSView {
             let d: CGFloat = 40
             let c = NSRect(x: (bounds.width - d) / 2, y: (bounds.height - d) / 2, width: d, height: d)
             let primary = text == "PAUSE"
-            (primary ? KeyLabel.blue : NSColor(white: 0.24, alpha: 1)).setFill(); NSBezierPath(ovalIn: c).fill()
+            (primary ? KeyLabel.blue : NSColor(calibratedRed: 0x3A / 255, green: 0x3A / 255, blue: 0x3C / 255, alpha: 1)).setFill(); NSBezierPath(ovalIn: c).fill()
             if !primary { NSColor(white: 1, alpha: 0.12).setStroke(); let o = NSBezierPath(ovalIn: c.insetBy(dx: 0.5, dy: 0.5)); o.lineWidth = 1; o.stroke() }
             let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .bold).applying(.init(paletteColors: [white]))
             let img = base.withSymbolConfiguration(cfg) ?? base
@@ -167,8 +167,8 @@ final class BandView: NSView {
     var live = false { didSet { if live != oldValue { needsDisplay = true } } }
     var ctrlTop: CGFloat = 0
     override func draw(_ r: NSRect) {
-        let card = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 22, yRadius: 22)
-        NSColor(calibratedRed: 0.11, green: 0.11, blue: 0.12, alpha: 0.97).setFill(); card.fill()
+        let card = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 20, yRadius: 20)
+        NSColor(calibratedRed: 0x1E / 255, green: 0x1E / 255, blue: 0x20 / 255, alpha: 1).setFill()   // v52: TTT's MaSubtitleBackground 0xFF1E1E20, radius 20; card.fill()
         NSColor(white: 1, alpha: 0.10).setStroke(); card.lineWidth = 1; card.stroke()
         text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
         NSColor(white: 1, alpha: 0.08).setFill()

@@ -24,7 +24,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 51
+let VERSION = 52
 let APP_NAME = "Voice Engine (Mantra)"
 
 struct SubtitleSettings: Codable, Equatable {
