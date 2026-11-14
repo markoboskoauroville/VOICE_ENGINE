@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 45
+let VERSION = 46
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -213,7 +213,7 @@ final class Engine: ObservableObject {
         engine = e; if let v = v { voice = v }            // the window answers at once; refresh() confirms
         post("/current", b)
     }
-    func hear() { post("/speak", ["text": "Marko, this is how I sound now."]) }
+    func hear() { post("/speak", ["text": "Marko, this is how I sound now.", "here": true]) }
 }
 
 // THE SWITCH (v20, from Voice of Claude v6, 8.10.2026: "make [a Swift app] ... in which I can easily turn on and off the
@@ -313,6 +313,82 @@ struct SwitchRow: View {
     }
 }
 
+// v46 (14.11.2026) SPEAKS ON. Marko: "I want to see all the Voice Engine available ... next to each engine, there will be a
+// speaker icon. If I enable that speaker icon, you are speaking to that engine from this computer. Also in the list is
+// local computer ... so I can also disable the local computer not to be used in the speaking of anything." The list and
+// its speakers live in ~/.voice/outputs.json, written only by voiceout (VOICE_ENGINE_ANDROID/mac/voiceout.py), read by
+// langsay, phonesay and voiced.py's /speak. THIS MAC first, then every phone with Voice Engine Android (an adb scan when
+// the window opens and every 20 s while it is open). Each speaker is an AX button `speaker-<id>`.
+let VOICEOUT = HOME + "/Developer/VOICE_ENGINE_ANDROID/mac/voiceout.py"
+
+struct Output: Identifiable, Equatable { let id: String; let name: String; let on: Bool; let up: Bool; let addrs: [String] }
+
+final class Outputs: ObservableObject {
+    @Published var list: [Output] = []
+    @Published var busy: String? = nil
+    private var timer: Timer?
+    private let q = DispatchQueue(label: "outputs")
+    init() {
+        run("list"); run("scan")
+        timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in self?.run("scan") }
+    }
+    func run(_ args: String, id: String? = nil) {
+        q.async {
+            let (_, out) = sh("'\(PYTHON)' '\(VOICEOUT)' \(args) --json 2>/dev/null")
+            let rows = (try? JSONSerialization.jsonObject(with: Data(out.utf8)) as? [[String: Any]]) ?? nil
+            DispatchQueue.main.async {
+                if let rows = rows {
+                    self.list = rows.map { Output(id: $0["id"] as? String ?? "", name: $0["name"] as? String ?? "",
+                                                  on: $0["on"] as? Bool ?? false, up: $0["up"] as? Bool ?? false,
+                                                  addrs: $0["addrs"] as? [String] ?? []) }
+                }
+                if id != nil { self.busy = nil }
+            }
+        }
+    }
+    func toggle(_ o: Output) {
+        guard busy == nil else { return }
+        busy = o.id
+        // the speaker answers at once; voiceout confirms
+        list = list.map { $0.id == o.id ? Output(id: o.id, name: o.name, on: !o.on, up: o.up, addrs: o.addrs) : $0 }
+        run("\(o.on ? "off" : "on") '\(o.id)'", id: o.id)
+    }
+}
+
+struct SpeakersRow: View {
+    @ObservedObject var o: Outputs
+    var heard: String {
+        let on = o.list.filter { $0.on }.map { $0.name }
+        return on.isEmpty ? "NOWHERE, SILENT" : on.joined(separator: " + ")
+    }
+    var body: some View {
+        Row(name: "SPEAKS ON", value: heard) {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(o.list) { d in
+                    HStack(spacing: 10) {
+                        Image(systemName: d.on ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                            .font(.system(size: 17, weight: .bold)).foregroundColor(d.on ? GREEN : GREY)
+                            .frame(width: 34, height: 28).contentShape(Rectangle())
+                            .onTapGesture { o.toggle(d) }
+                            .axButton("Speaker \(d.name)", id: "speaker-\(d.id)", value: d.on ? "on" : "off") { o.toggle(d) }
+                            .help(d.on ? "On: the voice speaks here. Click to switch it off." : "Off: nothing is spoken here. Click to switch it on.")
+                        Text(d.name).font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(d.on ? SAND : GREY)
+                            .frame(width: 170, alignment: .leading)
+                        Circle().fill(d.up ? GREEN : GREY).frame(width: 7, height: 7)
+                        Text(d.id == "mac" ? "THIS COMPUTER'S SPEAKERS" : d.up ? "VOICE ENGINE ANSWERS" : "NOT REACHED NOW")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(d.up ? GREEN : GREY)
+                        Spacer()
+                        if o.busy == d.id { Text("…").foregroundColor(AMBER) }
+                    }
+                }
+                if o.list.isEmpty {
+                    Text("Looking for the Voice Engines…").font(.system(size: 11, design: .monospaced)).foregroundColor(GREY)
+                }
+            }
+        }
+    }
+}
+
 // v13 (19.10.2026). Marko: "in that window at the top voice engine on off so I can turn it off": OFF stops the reading
 // now (/speak/stop) and is kept in subtitle.json as `voice: false`, which the Stop hook subtitle_answer.py obeys, so no
 // answer is read until ON. The voice server itself keeps running (this app never starts or stops it).
@@ -386,9 +462,12 @@ struct Settings: View {
     @ObservedObject var m: Model
     @StateObject var engine = Engine()
     @StateObject var sw = Switch()
+    @StateObject var outputs = Outputs()
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             SwitchRow(sw: sw)
+            Divider().overlay(GREY.opacity(0.35))
+            SpeakersRow(o: outputs)
             Divider().overlay(GREY.opacity(0.35))
             EngineRow(e: engine)
             Divider().overlay(GREY.opacity(0.35))
