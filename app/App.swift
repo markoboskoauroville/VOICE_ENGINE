@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 48
+let VERSION = 49
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -283,9 +283,11 @@ final class Switch: ObservableObject {
 // The first row (v20): ON OFF · VOICE ENGINE · TOP ✕, then the three parts. ON / OFF start and stop the engine itself.
 struct SwitchRow: View {
     @ObservedObject var sw: Switch
+    var header = true         // v49: false = only the three parts (the ENGINE tab)
+    var parts = true          // v49: the first row stays above the tabs; the three parts live in the ENGINE tab
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 0) {
+            if header { HStack(spacing: 0) {
                 if let b = sw.busy {
                     Text(b).font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(AMBER).padding(.horizontal, 6)
                 } else {
@@ -298,8 +300,8 @@ struct SwitchRow: View {
                 Spacer()
                 TopWord()
                 CloseX()
-            }
-            ForEach(PARTS) { p in
+            } }
+            if parts { ForEach(PARTS) { p in
                 let u = sw.up[p.id] ?? false
                 HStack(spacing: 10) {
                     Circle().fill(u ? GREEN : GREY).frame(width: 8, height: 8)
@@ -308,7 +310,7 @@ struct SwitchRow: View {
                     Spacer()
                     Text(u ? "RUNNING" : "STOPPED").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(u ? GREEN : GREY)
                 }
-            }
+            } }
         }
     }
 }
@@ -458,118 +460,142 @@ extension View {
     }
 }
 
+let TABS = ["ENGINE", "SPEAKERS", "VOICE", "SUBTITLES", "BACKGROUND"]
+
 struct Settings: View {
     @ObservedObject var m: Model
     @StateObject var engine = Engine()
     @StateObject var sw = Switch()
     @StateObject var outputs = Outputs()
+    @AppStorage("tab") var tab = "ENGINE"
     var body: some View {
         // v47 (14.11.2026): the rows scroll inside a window no taller than the screen; v46's SPEAKS ON made the content taller
         // than the BenQ and the window was cut at the top (the switch and the speakers were above the screen's edge)
         ScrollView(.vertical, showsIndicators: true) { content }
-            .frame(minWidth: 560, idealWidth: 560, minHeight: 360,
-                   idealHeight: min(1460, (NSScreen.main?.visibleFrame.height ?? 900) - 60))
+            .frame(minWidth: 560, idealWidth: 560, minHeight: 360, idealHeight: 760)
             .background(INK)
             .preferredColorScheme(.dark)
     }
+    // v49 (14.11.2026, Marko: "change this user interface into tabs because there are too many things on the screen"): the
+    // first row stays; under it one tab at a time, the last one remembered (UserDefaults "tab"). Tabs are AX buttons tab-<name>.
     var content: some View {
         VStack(alignment: .leading, spacing: 18) {
-            SwitchRow(sw: sw)
-            Divider().overlay(GREY.opacity(0.35))
-            SpeakersRow(o: outputs)
-            Divider().overlay(GREY.opacity(0.35))
-            EngineRow(e: engine)
-            Divider().overlay(GREY.opacity(0.35))
-            // v20: SUBTITLES, the words written on the screens while the voice speaks
-            Row(name: "SUBTITLES", value: m.s.subtitles ? "SHOWN WHILE THE VOICE SPEAKS" : "OFF, VOICE ONLY") {
-                HStack {
-                    Word(text: "ON", on: m.s.subtitles) { m.s.subtitles = true }
-                    Word(text: "OFF", on: !m.s.subtitles) { m.s.subtitles = false }
-                    Spacer()
-                    Word(text: "SHOW A TEST SUBTITLE", on: false) { Model.preview() }
+            SwitchRow(sw: sw, parts: false)
+            HStack(spacing: 4) {
+                ForEach(TABS, id: \.self) { t in
+                    Text(t).font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(tab == t ? INK : GREY)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(tab == t ? AMBER : Color.clear))
+                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(tab == t ? AMBER : GREY.opacity(0.4), lineWidth: 1))
+                        .contentShape(Rectangle()).onTapGesture { tab = t }
+                        .axButton("Tab \(t)", id: "tab-\(t.lowercased())", value: tab == t ? "on" : "off") { tab = t }
                 }
+                Spacer()
             }
-            // the subtitle as it will look, small
-            ZStack {
-                Rectangle().fill(Color(white: m.s.grey / 100).opacity(m.s.band / 100))
-                (Text("Marko, this is how I ").foregroundColor(colour(m.s.colour))
-                 + Text("will").foregroundColor(colour(m.s.word))
-                 + Text(" be written.").foregroundColor(colour(m.s.colour)))
-                    .font(.custom("Helvetica Neue", size: 22).weight(m.s.bold ? .bold : .regular))
-            }
-            .frame(height: 64)
-            .background(LinearGradient(colors: [Color(white: 0.35), Color(white: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            Divider().overlay(GREY.opacity(0.35))
+            switch tab {
+            case "SPEAKERS": SpeakersRow(o: outputs)
+            case "VOICE": EngineRow(e: engine)
+            case "SUBTITLES":
+                VStack(alignment: .leading, spacing: 18) {
+                    // v20: SUBTITLES, the words written on the screens while the voice speaks
+                    Row(name: "SUBTITLES", value: m.s.subtitles ? "SHOWN WHILE THE VOICE SPEAKS" : "OFF, VOICE ONLY") {
+                        HStack {
+                            Word(text: "ON", on: m.s.subtitles) { m.s.subtitles = true }
+                            Word(text: "OFF", on: !m.s.subtitles) { m.s.subtitles = false }
+                            Spacer()
+                            Word(text: "SHOW A TEST SUBTITLE", on: false) { Model.preview() }
+                        }
+                    }
+                    // the subtitle as it will look, small
+                    ZStack {
+                        Rectangle().fill(Color(white: m.s.grey / 100).opacity(m.s.band / 100))
+                        (Text("Marko, this is how I ").foregroundColor(colour(m.s.colour))
+                         + Text("will").foregroundColor(colour(m.s.word))
+                         + Text(" be written.").foregroundColor(colour(m.s.colour)))
+                            .font(.custom("Helvetica Neue", size: 22).weight(m.s.bold ? .bold : .regular))
+                    }
+                    .frame(height: 64)
+                    .background(LinearGradient(colors: [Color(white: 0.35), Color(white: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
 
-            Row(name: "LETTER SIZE", value: String(format: "%.1f %% of the screen height", m.s.size)) {
-                HStack {
-                    BigKey(text: "−") { m.s.size = max(2, m.s.size - 0.5) }
-                    Slider(value: $m.s.size, in: 2...14, step: 0.5)
-                    BigKey(text: "+") { m.s.size = min(14, m.s.size + 0.5) }
-                }
-            }
-            Row(name: "LETTER COLOUR", value: SWATCHES.first { $0.1 == m.s.colour }?.0 ?? m.s.colour) {
-                HStack(spacing: 10) {
-                    ForEach(SWATCHES, id: \.1) { sw in
-                        Circle().fill(colour(sw.1)).frame(width: 26, height: 26)
-                            .overlay(Circle().stroke(m.s.colour == sw.1 ? GREEN : Color.clear, lineWidth: 3).padding(-4))
-                            .onTapGesture { m.s.colour = sw.1 }
+                    Row(name: "LETTER SIZE", value: String(format: "%.1f %% of the screen height", m.s.size)) {
+                        HStack {
+                            BigKey(text: "−") { m.s.size = max(2, m.s.size - 0.5) }
+                            Slider(value: $m.s.size, in: 2...14, step: 0.5)
+                            BigKey(text: "+") { m.s.size = min(14, m.s.size + 0.5) }
+                        }
                     }
-                    Spacer()
-                    Word(text: "BOLD", on: m.s.bold) { m.s.bold.toggle() }
-                }.padding(.vertical, 4)
-            }
-            Row(name: "COLOUR OF THE WORD BEING SPOKEN", value: WORD_SWATCHES.first { $0.1 == m.s.word }?.0 ?? m.s.word) {
-                Swatches(list: WORD_SWATCHES, value: $m.s.word)
-            }
-            Row(name: "MARKER BEHIND THE SPOKEN WORD", value: BG_SWATCHES.first { $0.1 == m.s.wordbg }?.0 ?? m.s.wordbg) {
-                Swatches(list: BG_SWATCHES, value: $m.s.wordbg)
-            }
-            Row(name: "SPOKEN WORD LIT EARLIER / LATER", value: String(format: "%+.0f ms", m.s.offset)) {
-                Slider(value: $m.s.offset, in: -400...400, step: 10)
-            }
-            Row(name: "SUBTITLE STAYS AFTER THE VOICE STOPS", value: lingerName(m.s.linger)) {
-                HStack {
-                    ForEach([2.0, 30.0, 120.0, 600.0, 0.0], id: \.self) { v in
-                        Word(text: lingerName(v), on: m.s.linger == v) { m.s.linger = v }
+                    Row(name: "LETTER COLOUR", value: SWATCHES.first { $0.1 == m.s.colour }?.0 ?? m.s.colour) {
+                        HStack(spacing: 10) {
+                            ForEach(SWATCHES, id: \.1) { sw in
+                                Circle().fill(colour(sw.1)).frame(width: 26, height: 26)
+                                    .overlay(Circle().stroke(m.s.colour == sw.1 ? GREEN : Color.clear, lineWidth: 3).padding(-4))
+                                    .onTapGesture { m.s.colour = sw.1 }
+                            }
+                            Spacer()
+                            Word(text: "BOLD", on: m.s.bold) { m.s.bold.toggle() }
+                        }.padding(.vertical, 4)
+                    }
+                    Row(name: "COLOUR OF THE WORD BEING SPOKEN", value: WORD_SWATCHES.first { $0.1 == m.s.word }?.0 ?? m.s.word) {
+                        Swatches(list: WORD_SWATCHES, value: $m.s.word)
+                    }
+                    Row(name: "MARKER BEHIND THE SPOKEN WORD", value: BG_SWATCHES.first { $0.1 == m.s.wordbg }?.0 ?? m.s.wordbg) {
+                        Swatches(list: BG_SWATCHES, value: $m.s.wordbg)
+                    }
+                    Row(name: "SPOKEN WORD LIT EARLIER / LATER", value: String(format: "%+.0f ms", m.s.offset)) {
+                        Slider(value: $m.s.offset, in: -400...400, step: 10)
+                    }
+                    Row(name: "SUBTITLE STAYS AFTER THE VOICE STOPS", value: lingerName(m.s.linger)) {
+                        HStack {
+                            ForEach([2.0, 30.0, 120.0, 600.0, 0.0], id: \.self) { v in
+                                Word(text: lingerName(v), on: m.s.linger == v) { m.s.linger = v }
+                            }
+                        }
                     }
                 }
-            }
-            Row(name: "COLUMN WIDTH (TEXT AND KEYS)", value: String(format: "%.1f %% of the screen", m.s.column)) {
-                HStack(spacing: 8) {
-                    Text("NARROW").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
-                    Slider(value: $m.s.column, in: 20...100, step: 0.1)
-                    Text("WIDE").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
-                }
-            }
-            Row(name: "BACKGROUND BEHIND THE SUBTITLE", value: m.s.band < 1 ? "NONE" : String(format: "%.0f %% solid", m.s.band)) {
-                HStack(spacing: 8) {
-                    Text("CLEAR").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
-                    Slider(value: $m.s.band, in: 0...100, step: 1)
-                    Text("SOLID").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
-                }
-            }
-            Row(name: "BACKGROUND SHADE", value: String(format: "%.0f %% light", m.s.grey)) {
-                HStack(spacing: 8) {
-                    Text("DARK").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
-                    Slider(value: $m.s.grey, in: 0...60, step: 1)
-                    Text("LIGHT").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
-                }
-            }
-            Row(name: "BACKGROUND ON THE MAIN SCREEN", value: m.s.bandmain ? "ON" : "OFF, LETTERS ONLY THERE") {
-                HStack {
-                    Word(text: "ON", on: m.s.bandmain) { m.s.bandmain = true }
-                    Word(text: "OFF", on: !m.s.bandmain) { m.s.bandmain = false }
-                }
-            }
-            Row(name: "WHERE ON THE SCREEN", value: m.s.ypos >= 0 ? "WHERE YOU DRAGGED IT" : m.s.position.uppercased()) {
-                HStack {
-                    ForEach(["top", "middle", "bottom"], id: \.self) { p in
-                        // v20: a click places it there, also after a drag (the drag kept `ypos`, which won over this choice)
-                        Word(text: p.uppercased(), on: m.s.ypos < 0 && m.s.position == p) { m.s.ypos = -1; m.s.position = p }
+            case "BACKGROUND":
+                VStack(alignment: .leading, spacing: 18) {
+                    Row(name: "COLUMN WIDTH (TEXT AND KEYS)", value: String(format: "%.1f %% of the screen", m.s.column)) {
+                        HStack(spacing: 8) {
+                            Text("NARROW").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                            Slider(value: $m.s.column, in: 20...100, step: 0.1)
+                            Text("WIDE").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                        }
                     }
-                    Spacer()
+                    Row(name: "BACKGROUND BEHIND THE SUBTITLE", value: m.s.band < 1 ? "NONE" : String(format: "%.0f %% solid", m.s.band)) {
+                        HStack(spacing: 8) {
+                            Text("CLEAR").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                            Slider(value: $m.s.band, in: 0...100, step: 1)
+                            Text("SOLID").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                        }
+                    }
+                    Row(name: "BACKGROUND SHADE", value: String(format: "%.0f %% light", m.s.grey)) {
+                        HStack(spacing: 8) {
+                            Text("DARK").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                            Slider(value: $m.s.grey, in: 0...60, step: 1)
+                            Text("LIGHT").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(GREY)
+                        }
+                    }
+                    Row(name: "BACKGROUND ON THE MAIN SCREEN", value: m.s.bandmain ? "ON" : "OFF, LETTERS ONLY THERE") {
+                        HStack {
+                            Word(text: "ON", on: m.s.bandmain) { m.s.bandmain = true }
+                            Word(text: "OFF", on: !m.s.bandmain) { m.s.bandmain = false }
+                        }
+                    }
+                    Row(name: "WHERE ON THE SCREEN", value: m.s.ypos >= 0 ? "WHERE YOU DRAGGED IT" : m.s.position.uppercased()) {
+                        HStack {
+                            ForEach(["top", "middle", "bottom"], id: \.self) { p in
+                                // v20: a click places it there, also after a drag (the drag kept `ypos`, which won over this choice)
+                                Word(text: p.uppercased(), on: m.s.ypos < 0 && m.s.position == p) { m.s.ypos = -1; m.s.position = p }
+                            }
+                            Spacer()
+                        }
+                    }
                 }
+            default: SwitchRow(sw: sw, header: false)   // ENGINE: the three parts of the engine
             }
+            Spacer(minLength: 0)
             HStack {
                 Spacer()
                 Text("v\(VERSION)").font(.system(size: 11, design: .monospaced)).foregroundColor(GREY)
@@ -697,7 +723,8 @@ final class Delegate: NSObject, NSApplicationDelegate {
         let w = NSWindow(contentViewController: vc)
         w.title = title; w.styleMask = [.titled, .closable, .miniaturizable, .resizable]; w.isReleasedWhenClosed = false
         // v48: open as tall as the screen allows (v47 opened at 388 px, SwiftUI ignored the ideal height of the scroll area)
-        if let f = NSScreen.main?.visibleFrame { w.setContentSize(NSSize(width: max(560, w.frame.width), height: min(1460, f.height - 60))) }
+        // v49: tabs, so the window is as tall as the tallest tab (SUBTITLES), never taller than the screen
+        if let f = NSScreen.main?.visibleFrame { w.setContentSize(NSSize(width: max(560, w.frame.width), height: min(800, f.height - 60))) }
         w.center(); w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
         window = w
     }
