@@ -100,31 +100,32 @@ final class KeyLabel: NSView {
         if dragged { dragged = false; (superview as? BandView)?.mouseUp(with: e); return }
         action()
     }
+    // v51 (Marko, 14.11.2026: "professional look ... with the style of my black icons"): the keys are black round icons as in
+    // Voice to Text (Mantra): a dark disc with a hairline, a white SF Symbol; PAUSE is the blue disc (the SEND of Voice to
+    // Text); SPEED is a small dark display with mono digits. No shadows, no orange.
+    static let blue = NSColor(calibratedRed: 0x3D / 255, green: 0x7B / 255, blue: 0xF7 / 255, alpha: 1)
     override func draw(_ r: NSRect) {
-        // v43 (Marko, 13.11.2026: "exactly the same for the controls as for the subtitles. They need to have hard shadow"):
-        // the subtitle's rules: its colour, its font, a hard black shadow, no blur, down and right by 7 % of the glyph (>= 2 pt).
-        // This view is not flipped: down is minus y.
-        let conf = SubtitleEngine.shared.conf
-        let col = nscolour(conf.colour) ?? NSColor(white: 0.92, alpha: 1)
-        let off = max(2, round(size * 0.07))
+        let white = NSColor(white: 0.95, alpha: 1)
         if let name = symbol, let base = NSImage(systemSymbolName: name, accessibilityDescription: text) {
-            func img(_ c: NSColor) -> NSImage {
-                let cfg = NSImage.SymbolConfiguration(pointSize: size, weight: conf.bold ? .bold : .regular).applying(.init(paletteColors: [c]))
-                return base.withSymbolConfiguration(cfg) ?? base
-            }
-            let sz = img(col).size
-            let x = (bounds.width - sz.width) / 2, y = (bounds.height - sz.height) / 2
-            img(.black).draw(in: NSRect(x: x + off, y: y - off, width: sz.width, height: sz.height))
-            img(col).draw(in: NSRect(x: x, y: y, width: sz.width, height: sz.height))
+            let d: CGFloat = 40
+            let c = NSRect(x: (bounds.width - d) / 2, y: (bounds.height - d) / 2, width: d, height: d)
+            let primary = text == "PAUSE"
+            (primary ? KeyLabel.blue : NSColor(white: 0.24, alpha: 1)).setFill(); NSBezierPath(ovalIn: c).fill()
+            if !primary { NSColor(white: 1, alpha: 0.12).setStroke(); let o = NSBezierPath(ovalIn: c.insetBy(dx: 0.5, dy: 0.5)); o.lineWidth = 1; o.stroke() }
+            let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .bold).applying(.init(paletteColors: [white]))
+            let img = base.withSymbolConfiguration(cfg) ?? base
+            let sz = img.size
+            img.draw(in: NSRect(x: c.midX - sz.width / 2, y: c.midY - sz.height / 2, width: sz.width, height: sz.height))
             return
         }
+        let pill = NSRect(x: (bounds.width - 60) / 2, y: (bounds.height - 30) / 2, width: 60, height: 30)
+        NSColor(white: 0.17, alpha: 1).setFill(); NSBezierPath(roundedRect: pill, xRadius: 15, yRadius: 15).fill()
+        NSColor(white: 1, alpha: 0.12).setStroke(); let o = NSBezierPath(roundedRect: pill.insetBy(dx: 0.5, dy: 0.5), xRadius: 15, yRadius: 15); o.lineWidth = 1; o.stroke()
         let p = NSMutableParagraphStyle(); p.alignment = .center
-        let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
-        let h = size * 1.3
-        let rect = NSRect(x: 0, y: (bounds.height - h) / 2, width: bounds.width, height: h)
-        let shadowed = (display ?? text) as NSString
-        shadowed.draw(in: rect.offsetBy(dx: off, dy: -off), withAttributes: [.font: font, .foregroundColor: NSColor.black, .paragraphStyle: p])
-        shadowed.draw(in: rect, withAttributes: [.font: font, .foregroundColor: col, .paragraphStyle: p])
+        let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
+        let str = (display ?? text) as NSString
+        let h = font.boundingRectForFont.height
+        str.draw(in: NSRect(x: pill.minX, y: pill.midY - h / 2, width: pill.width, height: h), withAttributes: [.font: font, .foregroundColor: white, .paragraphStyle: p])
     }
 }
 
@@ -161,17 +162,31 @@ final class BandView: NSView {
         if wasDrag { onDragEnd(); return }
         if e.clickCount == 2 { onClick() }
     }
+    // v51: the window of Voice to Text (Mantra): a dark rounded card, a hairline, a small status display at the top that says
+    // where the speech comes from, a hairline above the black icons. The sentence is drawn without a shadow.
+    var live = false { didSet { if live != oldValue { needsDisplay = true } } }
+    var ctrlTop: CGFloat = 0
     override func draw(_ r: NSRect) {
-        fill.setFill(); bounds.fill()
+        let card = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 22, yRadius: 22)
+        NSColor(calibratedRed: 0.11, green: 0.11, blue: 0.12, alpha: 0.97).setFill(); card.fill()
+        NSColor(white: 1, alpha: 0.10).setStroke(); card.lineWidth = 1; card.stroke()
         text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
+        NSColor(white: 1, alpha: 0.08).setFill()
+        NSRect(x: 28, y: ctrlTop - 2, width: bounds.width - 56, height: 1).fill()
         if source.isEmpty { return }
-        let c = SubtitleEngine.shared.conf
         let fs = srcFont(size: srcRect.height), p = NSMutableParagraphStyle(); p.alignment = .center
-        let col = (nscolour(c.colour) ?? NSColor(white: 0.92, alpha: 1)).withAlphaComponent(0.62)
-        let f = NSFont.monospacedSystemFont(ofSize: fs, weight: .regular)
+        let f = NSFont.monospacedSystemFont(ofSize: fs, weight: .semibold)
+        let at: [NSAttributedString.Key: Any] = [.font: f, .foregroundColor: NSColor(white: 1, alpha: 0.78), .paragraphStyle: p]
         let s = "(" + source + ")" as NSString
-        s.draw(with: srcRect.offsetBy(dx: 2, dy: 2), options: [.usesLineFragmentOrigin], attributes: [.font: f, .foregroundColor: NSColor.black, .paragraphStyle: p])
-        s.draw(with: srcRect, options: [.usesLineFragmentOrigin], attributes: [.font: f, .foregroundColor: col, .paragraphStyle: p])
+        let tw = max(40, srcRect.width - 56)
+        let bb = s.boundingRect(with: NSSize(width: tw, height: 1000), options: [.usesLineFragmentOrigin], attributes: at)
+        let w = min(srcRect.width, ceil(bb.width) + 40), h = ceil(bb.height) + 10
+        let pill = NSRect(x: srcRect.midX - w / 2, y: srcRect.minY, width: w, height: h)
+        NSColor(white: 0, alpha: 0.55).setFill(); NSBezierPath(roundedRect: pill, xRadius: min(14, h / 2), yRadius: min(14, h / 2)).fill()
+        NSColor(white: 1, alpha: 0.10).setStroke(); let o = NSBezierPath(roundedRect: pill.insetBy(dx: 0.5, dy: 0.5), xRadius: min(14, h / 2), yRadius: min(14, h / 2)); o.lineWidth = 1; o.stroke()
+        (live ? NSColor.systemGreen : NSColor(white: 0.45, alpha: 1)).setFill()
+        NSBezierPath(ovalIn: NSRect(x: pill.minX + 12, y: pill.midY - 3, width: 6, height: 6)).fill()
+        s.draw(with: NSRect(x: pill.minX + 24, y: pill.minY + 5, width: pill.width - 36, height: bb.height), options: [.usesLineFragmentOrigin], attributes: at)
     }
     func srcFont(size h: CGFloat) -> CGFloat { max(11, (h - 6) / 2 / 1.25) }
 }
@@ -186,7 +201,7 @@ final class ScreenSub {
         panel = NSPanel(contentRect: screen.visibleFrame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.overlayWindow)))
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
-        panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = false
+        panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = true
         panel.hidesOnDeactivate = false; panel.becomesKeyOnlyIfNeeded = true
         panel.contentView = band
         band.onClick = { [weak engine] in engine?.answer() }
@@ -233,7 +248,7 @@ final class ScreenSub {
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
         _ = wide; let lines: CGFloat = 2            // v43: at most four words at a time: the band is two lines high, never jumping
         let kh: CGFloat = ROWH * 3 + 8    // v43: three rows of keys under the text
-        let sh = ceil(max(11, size * 0.34) * 1.25 * 2) + 6      // v50: the strip at the top for who is talking: two lines, wraps, never cut
+        let sh = ceil(max(11, size * 0.34) * 1.25 * 2) + 24      // v50: the strip at the top for who is talking: two lines, wraps, never cut
         let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh) + sh
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
@@ -241,11 +256,12 @@ final class ScreenSub {
         panel.setFrame(NSRect(x: vf.minX + floor((vf.width - pw) / 2), y: y, width: pw, height: h), display: false)
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
-        band.fill = NSColor(white: CGFloat(c.grey) / 100, alpha: alpha)
-        band.srcRect = NSRect(x: 24, y: 4, width: room, height: sh - 4)
+        _ = alpha; band.ctrlTop = h - kh        // v51: the card is always dark; `band`, `grey`, `bandmain` no longer paint a grey band
+        band.srcRect = NSRect(x: 24, y: 12, width: room, height: sh - 12)
+        panel.invalidateShadow()
         band.textRect = NSRect(x: 24, y: sh + max(4, (h - sh - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
-        for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 2 }                  // x: SubtitleEngine.placeKeys
+        for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 4 }                  // x: SubtitleEngine.placeKeys
     }
     /// v43: the chunk's lines (1 or 2) put in the middle of the band's text part
     func place(_ chunk: String, _ c: SubtitleSettings) {
@@ -253,7 +269,7 @@ final class ScreenSub {
         let wide = (chunk as NSString).size(withAttributes: [.font: font]).width
         let room = band.textRect.width
         let n = max(1, min(2, ceil(wide / (room * 0.92))))
-        let h = panel.frame.height, kh = ROWH * 3 + 8, sh = band.srcRect.height + 4
+        let h = panel.frame.height, kh = ROWH * 3 + 8, sh = band.srcRect.height + 12
         band.textRect.origin.y = sh + max(4, (h - sh - kh - n * size * 1.22) / 2 - size * 0.08)
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
@@ -406,8 +422,7 @@ final class SubtitleEngine {
         // v37 (Marko, 8.11.2026: "they don't have shadow. So if something is in the background I don't see make a hard
         // shadow"): a hard black shadow, no blur, offset down and right by 7 % of the letter size (at least 2 pt).
         // NSShadow's offset is in screen space (not flipped with the view): a negative height moves it down.
-        let sh = NSShadow(); sh.shadowColor = NSColor.black; sh.shadowBlurRadius = 0
-        let off = max(2, round(s.size * 0.07)); sh.shadowOffset = NSSize(width: off, height: -off)
+        
         // v43: only the chunk holding the word being said (the first chunk before the first word, the last one stays at the end)
         let scalars = Array(text.unicodeScalars)
         var base = 0, shown = text
@@ -420,7 +435,7 @@ final class SubtitleEngine {
             }
         }
         s.place(shown, conf)
-        let a = NSMutableAttributedString(string: shown, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p, .shadow: sh])
+        let a = NSMutableAttributedString(string: shown, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p])
         if k >= 0, k < words.count, let st = words[k].s, let en = words[k].e {
             // the server counts characters (code points), NSString counts UTF-16: convert
             if st >= base, en <= base + shown.unicodeScalars.count, st < en {
@@ -550,6 +565,7 @@ final class SubtitleEngine {
     func heard(_ st: Speaking) {
         if pause.sync(st.paused ?? false) { paintPause() }
         if let sp = st.speed, abs(sp - speed) > 0.01 { speed = sp; paintSpeed() }
+        for s in subs { s.band.live = st.on && !(st.paused ?? false) }
         if st.on, let f = st.from { for s in subs { s.band.source = f } }     // v50: who is talking, kept while the last sentence lingers
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)
         if !following {
