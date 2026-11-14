@@ -266,3 +266,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 14.11.2026: who is talking (v50)
 "That engine needs, when it is talking, the message at the top to be written, not read ... at the top it should be the session name, so I know who is talking." (saved first in MANTRA_VOICE/momentaryupdates.md)
 **Status:** DONE v50: the subtitle band shows (SOURCE) at its top from GET /speaking `from`; the updater asks at start.
+
+## 14.11.2026 (v51): the subtitle gets the Voice to Text look
+"correct my voice engine with subtitle. At the top there is a name of the session writing it. So, look at this actually voice to text engine. I have a small display at the top. I want the same user interface for subtitle, like a window to the subtitle and small display at the top telling me where it's coming from. So we are changing the look, it's not anymore the look which is primitive like cheap subtitle, now it's professional look. with the style of my black icons"
+
+**Status:** in progress (plan v51: a dark rounded window, a small status display on top with the source, the controls as black round icons).
