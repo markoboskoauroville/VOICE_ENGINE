@@ -271,3 +271,6 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "correct my voice engine with subtitle. At the top there is a name of the session writing it. So, look at this actually voice to text engine. I have a small display at the top. I want the same user interface for subtitle, like a window to the subtitle and small display at the top telling me where it's coming from. So we are changing the look, it's not anymore the look which is primitive like cheap subtitle, now it's professional look. with the style of my black icons"
 
 **Status:** in progress (plan v51: a dark rounded window, a small status display on top with the source, the controls as black round icons).
+
+## 14.11.2026 (v51, more exact reference)
+"the same design we need for these subtitles. Look at subtitles of TTT which are coming above the keyboard. We want the same design here. We are improving the design."
