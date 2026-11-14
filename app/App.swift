@@ -23,7 +23,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 47
+let VERSION = 48
 
 struct SubtitleSettings: Codable, Equatable {
     var size: Double = 6.0          // letter height, % of the screen's height
@@ -696,7 +696,8 @@ final class Delegate: NSObject, NSApplicationDelegate {
     func open<V: View>(_ vc: NSHostingController<V>, _ title: String) {
         let w = NSWindow(contentViewController: vc)
         w.title = title; w.styleMask = [.titled, .closable, .miniaturizable, .resizable]; w.isReleasedWhenClosed = false
-        if let f = NSScreen.main?.visibleFrame, w.frame.height > f.height - 20 { w.setContentSize(NSSize(width: w.frame.width, height: f.height - 60)) }
+        // v48: open as tall as the screen allows (v47 opened at 388 px, SwiftUI ignored the ideal height of the scroll area)
+        if let f = NSScreen.main?.visibleFrame { w.setContentSize(NSSize(width: max(560, w.frame.width), height: min(1460, f.height - 60))) }
         w.center(); w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
         window = w
     }
