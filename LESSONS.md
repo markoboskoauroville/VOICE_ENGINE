@@ -64,3 +64,9 @@ PauseSync (press, 1.5 s guard, sync from the voice, label, symbol, request) now 
 - Cause in the code: `open()` began with `guard subs.isEmpty`. Once panels existed (a reading left them, e.g. linger 0 = until clicked, or a test), every later SUB press / new reading found `subs` non-empty, did nothing, and never ordered them front again. `didChangeScreenParameters` rebuilt only when `subs` was non-empty, and nothing listened to wake or Space changes, so panels that the window server dropped after display sleep/wake, a BenQ reconnect or a Space change stayed dead for ever. The exact trigger (sleep/wake vs display change) was not proven from the live process; the missing re-order and the missing rebuild are the proven code gaps.
 - Fix: `open()` now re-orders kept panels and always verifies; `verifyShown` checks 0.5 s later via CGWindowListCopyWindowInfo (on screen) that every panel's window number is listed, otherwise drops and recreates the panels once and logs to ~/.voice_engine/subtitle.log; panels are also rebuilt on NSWorkspace didWake, screensDidWake and activeSpaceDidChange while a reading is on or panels exist.
 - Rule: never guard a "show" on "I already have the window"; a window you hold is not a window the user sees. Check the window server.
+
+## 14.11.2026
+- Adding a row made the window taller than the BenQ: the top (switch, speakers) was off screen. Every settings window scrolls
+  and is no taller than the screen; check with a full-window screencapture after every new row.
+- SwiftUI ignored `idealHeight` on a ScrollView in an NSHostingController (opened at 388 px); set the window's content size
+  in `open()` instead.

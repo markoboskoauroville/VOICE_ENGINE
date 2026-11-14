@@ -248,7 +248,7 @@ Marko: "The order is triangle, square, and then sub."
 ## 14.11.2026 (v46): speak on every Voice Engine, a speaker per engine
 "we need to update the voice engine Open Voice Engine. I want to see all the Voice Engine available to tell skill. And next to each engine, there will be a speaker icon. If I enable that speaker icon, you are speaking to that engine from this computer. Also in the list is local computer. I can easily disable the local computer and talk only. Connection Keeper version 61 is installed, and I tested. I can talk only. Actually, you can talk only. To enable devices, so I can also disable the local computer not to be used in the speaking of anything."
 
-**Status:** saved first (14.11.2026). Plan v46: a SPEAKS ON list in the window (This Mac + every phone with Voice Engine Android), a speaker per row; ~/.voice/outputs.json read by langsay, phonesay and voiced, replacing ~/.voice/route.
+**Status:** DONE v46–v48 (14.11.2026): installed, SPEAKS ON seen in screenshots, langsay and /speak reached the Pixel only. Plan was v46: a SPEAKS ON list in the window (This Mac + every phone with Voice Engine Android), a speaker per row; ~/.voice/outputs.json read by langsay, phonesay and voiced, replacing ~/.voice/route.
 
 ## 14.11.2026 (v47)
 v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. v47: the rows scroll, the window fits the screen and can be resized.
@@ -256,4 +256,4 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 14.11.2026 (v49): tabs
 "please change this user interface into tabs because there are too many things on the screen at the moment. So give me the tabs for each section of the user interface"
 
-**Status:** saved first. Plan v49: the first row (ON OFF VOICE ENGINE TOP ✕) stays; under it the tabs ENGINE · SPEAKERS · VOICE · SUBTITLES · BACKGROUND, the last tab remembered.
+**Status:** DONE v49 (14.11.2026): built green, installed, every tab pressed by AX and seen in a screenshot. Plan was v49: the first row (ON OFF VOICE ENGINE TOP ✕) stays; under it the tabs ENGINE · SPEAKERS · VOICE · SUBTITLES · BACKGROUND, the last tab remembered.

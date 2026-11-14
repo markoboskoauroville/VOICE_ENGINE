@@ -159,3 +159,11 @@ never answered is dropped after 3 s (the copy running since login had stopped sh
 ## State at close, 13.11.2026
 
 v41-v45 (13.11.2026): subtitle self-heals (verify on screen, rebuild once, rebuild on wake/space); player keys on the subtitle (previous, next, skip, speed - / +); one centred column (38.2 % of the screen, setting) with keys in the subtitle's colour, font and hard shadow; at most 4 words at a time, chunks break at phrase boundaries; HIDE only hides (voice goes on), STOP also clears the queue; a drag starting on a key moves the band vertically and never presses the key; the dragged position is saved. Waiting for Marko: ears-test of the free voice was stopped unfinished.
+
+## 14.11.2026: v46–v49
+- v46 SPEAKS ON: `Outputs` + `SpeakersRow` (App.swift) run `voiceout list/scan/on/off --json` (VOICE_ENGINE_ANDROID/mac/voiceout.py)
+  with the pyenv python; AX ids `speaker-<id>`. HEAR IT posts `here: true` so it always plays on the Mac.
+- v47/v48: the settings rows scroll, the window opens at min(800, screen) and is resizable.
+- v49 TABS: the first row (ON OFF · VOICE ENGINE · TOP ✕) stays; tabs ENGINE · SPEAKERS · VOICE · SUBTITLES · BACKGROUND
+  (`TABS`, UserDefaults "tab", AX ids `tab-<name>`); `SwitchRow(header:parts:)`.
+- **Next version:** add the updater (MANTRA_MANIFEST kits/mac-updater, rule update-at-start.md); v46–v49 do not have it yet.
