@@ -17,7 +17,7 @@ import AppKit
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
 let KW: CGFloat = 0              // v43: no keys at the right any more; the group is one centred row under the text (alignment.md)
-let ROWW: [CGFloat] = [224, 152, 112]   // the three rows' widths (v43)
+let ROWW: [CGFloat] = [444]   // v54: ONE row of nine controls (Marko, 15.11.2026: "Make all buttons in one line")
 let ROWH: CGFloat = 52
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
@@ -168,7 +168,7 @@ final class BandView: NSView {
     var ctrlTop: CGFloat = 0
     override func draw(_ r: NSRect) {
         let card = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 20, yRadius: 20)
-        NSColor(calibratedRed: 0x1E / 255, green: 0x1E / 255, blue: 0x20 / 255, alpha: 1).setFill(); card.fill()   // v53: TTT's MaSubtitleBackground 0xFF1E1E20, radius 20
+        NSColor(calibratedRed: 0x1E / 255, green: 0x1E / 255, blue: 0x20 / 255, alpha: 0.2).setFill(); card.fill()   // v54: 20 % background; text and icons stay opaque   // v53: TTT's MaSubtitleBackground 0xFF1E1E20, radius 20
         NSColor(white: 1, alpha: 0.10).setStroke(); card.lineWidth = 1; card.stroke()
         text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
         NSColor(white: 1, alpha: 0.08).setFill()
@@ -201,7 +201,7 @@ final class ScreenSub {
         panel = NSPanel(contentRect: screen.visibleFrame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.overlayWindow)))
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
-        panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = true
+        panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = false   // v54: a 20 % card casts no shadow
         panel.hidesOnDeactivate = false; panel.becomesKeyOnlyIfNeeded = true
         panel.contentView = band
         band.onClick = { [weak engine] in engine?.answer() }
@@ -220,15 +220,15 @@ final class ScreenSub {
         // v43 (Marko, 13.11.2026: "center them and make controls in multiple lines, in three lines"): three centred rows under
         // the text: playback / speed / HIDE STOP. (name, symbol, row, x in the row, width, action)
         let right: [(String, String?, Int, CGFloat, CGFloat, () -> Void)] = [
-            ("PREVIOUS", "backward.end.fill", 0, 0, 56, { post("/speak/previous") }),
-            ("PAUSE", "pause.fill", 0, 56, 56, { [weak engine] in engine?.togglePause() }),
-            ("NEXT", "forward.end.fill", 0, 112, 56, { post("/speak/next") }),
-            ("SKIP", "forward.fill", 0, 168, 56, { post("/speak/skip") }),
-            ("SLOWER", "minus.circle", 1, 0, 44, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
-            ("SPEED", nil, 1, 44, 64, {}),
-            ("FASTER", "plus.circle", 1, 108, 44, { [weak engine] in engine?.nudgeSpeed(0.1) }),
-            ("HIDE", "captions.bubble.fill", 2, 0, 56, { [weak engine] in engine?.hideByClick() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
-            ("STOP", "stop.fill", 2, 56, 56, { [weak engine] in engine?.hide(); stopAndExit() })]
+            ("PREVIOUS", "backward.end.fill", 0, 0, 48, { post("/speak/previous") }),
+            ("PAUSE", "pause.fill", 0, 48, 48, { [weak engine] in engine?.togglePause() }),
+            ("NEXT", "forward.end.fill", 0, 96, 48, { post("/speak/next") }),
+            ("SKIP", "forward.fill", 0, 144, 48, { post("/speak/skip") }),
+            ("SLOWER", "minus.circle", 0, 192, 48, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
+            ("SPEED", nil, 0, 240, 60, {}),
+            ("FASTER", "plus.circle", 0, 300, 48, { [weak engine] in engine?.nudgeSpeed(0.1) }),
+            ("HIDE", "captions.bubble.fill", 0, 348, 48, { [weak engine] in engine?.hideByClick() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
+            ("STOP", "stop.fill", 0, 396, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, row, x, w, f) in right {
             let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 48), symbol: sym, f)
             k.slot = x; k.row = row
@@ -243,13 +243,13 @@ final class ScreenSub {
         let vf = screen.visibleFrame
         size = max(14, floor(vf.height * CGFloat(c.size) / 100))
         let room = max(260, floor(vf.width * CGFloat(c.column) / 100))   // v43: the column, centred on the screen
-        let pw = room + 48                  // the band: the column plus 24 each side
+        let pw = max(room + 48, ROWW[0] + 56)   // the band: the column plus 24 each side; v54: never narrower than the one row of controls
         let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
         let wide = (text as NSString).size(withAttributes: [.font: font]).width
         _ = wide; let lines: CGFloat = 2            // v43: at most four words at a time: the band is two lines high, never jumping
-        let kh: CGFloat = ROWH * 3 + 8    // v43: three rows of keys under the text
+        let kh: CGFloat = ROWH + 8    // v54: one row of keys under the text
         let sh = ceil(max(11, size * 0.34) * 1.25 * 2) + 24      // v50: the strip at the top for who is talking: two lines, wraps, never cut
-        let h = max(floor(lines * size * 1.22 + size * 0.7 + kh), 110 + kh) + sh
+        let h = ceil(lines * size * 1.22 + size * 0.5 + kh) + sh   // v54: no empty space
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
         if c.ypos >= 0 { y = ScreenSub.clampY(vf.minY + CGFloat(c.ypos) * vf.height - h / 2, h, vf) }   // v18: dragged
@@ -269,7 +269,7 @@ final class ScreenSub {
         let wide = (chunk as NSString).size(withAttributes: [.font: font]).width
         let room = band.textRect.width
         let n = max(1, min(2, ceil(wide / (room * 0.92))))
-        let h = panel.frame.height, kh = ROWH * 3 + 8, sh = band.srcRect.height + 12
+        let h = panel.frame.height, kh = ROWH + 8, sh = band.srcRect.height + 12
         band.textRect.origin.y = sh + max(4, (h - sh - kh - n * size * 1.22) / 2 - size * 0.08)
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
