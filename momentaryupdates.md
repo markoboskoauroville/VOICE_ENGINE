@@ -281,3 +281,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "Please fix, by the way, the voice thing. Now it wants to say something, and it's stuck. I merely just need to press Play, but this button in this kind of pyramid shape is ineffective. Make all buttons in one line, please. Make the vertical size less, and make this background transparent, maybe 20%."
 
 **Status:** DONE 15.11.2026, v54 (run 43687787531 green, release Latest, installed).
+
+## 15.11.2026 (v55): transparency the other way round
+"The transparency of the engine should be opposite, not 20% transparent and 80% opaque. I don't know what I mean. Not fully transparent, a little bit transparent."
+
+**Status:** in progress (v55: card alpha 0.8, 20 % see-through).
