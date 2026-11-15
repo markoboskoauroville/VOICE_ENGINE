@@ -81,3 +81,6 @@ Since v24 the blob does not show; pause, previous, next, stop live on the subtit
 - Marko's reference for "professional" was TTT's subtitle row (Android, TTT_MINI dictate/ui/MaSubtitleRow.kt), then Voice to Text's window: read the real layout code of the model app before drawing.
 - A comment appended to a replaced Swift line swallowed `card.fill()` (v52): the build was green and the card invisible. Always look at the screenshot, green is not proof.
 - The panel is the card's size, so panel.hasShadow follows the rounded shape; call invalidateShadow() after a relayout.
+
+## 15.11.2026 (v54): Play was overridden by MicGuard
+MicGuard (voiced.py) re-paused the reading 0.12 s after every Play while Speechify kept the microphone open, so Play looked dead. A hand-pressed Play must win for that reading (skip_gen), like READ ANYWAY. Check ~/.voice/voiced.log for `micguard:` lines first. AX tree (not a screenshot, the windows are not capturable) proves the layout: all `subtitle-*` buttons share one y.

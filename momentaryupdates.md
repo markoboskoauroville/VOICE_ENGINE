@@ -280,4 +280,4 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 15.11.2026 (v54): stuck Play, one row, transparent
 "Please fix, by the way, the voice thing. Now it wants to say something, and it's stuck. I merely just need to press Play, but this button in this kind of pyramid shape is ineffective. Make all buttons in one line, please. Make the vertical size less, and make this background transparent, maybe 20%."
 
-**Status:** in progress (v54).
+**Status:** DONE 15.11.2026, v54 (run 43687787531 green, release Latest, installed).
