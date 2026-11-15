@@ -286,3 +286,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "The transparency of the engine should be opposite, not 20% transparent and 80% opaque. I don't know what I mean. Not fully transparent, a little bit transparent."
 
 **Status:** DONE 15.11.2026, v55 (run 43687948293 green, Latest, installed).
+
+## 15.11.2026 (v56): green icon
+"Also I have two application, one is voice to text and another is voice engine. And they both have same icon so I am confused. Let the voice to text be red icon and let the engine be green icon."
+
+**Status:** DONE 15.11.2026, v56 green icon.
