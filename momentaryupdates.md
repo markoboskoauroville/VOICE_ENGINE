@@ -285,4 +285,4 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 15.11.2026 (v55): transparency the other way round
 "The transparency of the engine should be opposite, not 20% transparent and 80% opaque. I don't know what I mean. Not fully transparent, a little bit transparent."
 
-**Status:** in progress (v55: card alpha 0.8, 20 % see-through).
+**Status:** DONE 15.11.2026, v55 (run 43687948293 green, Latest, installed).
