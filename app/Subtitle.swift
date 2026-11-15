@@ -168,7 +168,7 @@ final class BandView: NSView {
     var ctrlTop: CGFloat = 0
     override func draw(_ r: NSRect) {
         let card = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 20, yRadius: 20)
-        NSColor(calibratedRed: 0x1E / 255, green: 0x1E / 255, blue: 0x20 / 255, alpha: 0.2).setFill(); card.fill()   // v54: 20 % background; text and icons stay opaque   // v53: TTT's MaSubtitleBackground 0xFF1E1E20, radius 20
+        NSColor(calibratedRed: 0x1E / 255, green: 0x1E / 255, blue: 0x20 / 255, alpha: 0.8).setFill(); card.fill()   // v55: 80 % opaque, 20 % see-through; text and icons opaque   // v53: TTT's MaSubtitleBackground 0xFF1E1E20, radius 20
         NSColor(white: 1, alpha: 0.10).setStroke(); card.lineWidth = 1; card.stroke()
         text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
         NSColor(white: 1, alpha: 0.08).setFill()
