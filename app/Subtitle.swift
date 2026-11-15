@@ -87,13 +87,13 @@ final class KeyLabel: NSView {
     required init?(coder: NSCoder) { fatalError() }
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
     // v44: a drag that starts on a key moves the band (vertically only) and never presses the key
-    private var downY: CGFloat = 0, dragged = false
+    private var downP = NSPoint.zero, dragged = false
     override func mouseDown(with e: NSEvent) {
-        downY = NSEvent.mouseLocation.y; dragged = false
+        downP = NSEvent.mouseLocation; dragged = false
         (superview as? BandView)?.mouseDown(with: e)
     }
     override func mouseDragged(with e: NSEvent) {
-        if abs(NSEvent.mouseLocation.y - downY) > 3 { dragged = true }
+        let m = NSEvent.mouseLocation; if abs(m.y - downP.y) > 3 || abs(m.x - downP.x) > 3 { dragged = true }
         (superview as? BandView)?.mouseDragged(with: e)
     }
     override func mouseUp(with e: NSEvent) {
@@ -141,21 +141,23 @@ final class BandView: NSView {
     // subtitle and pull it vertically only on the screen, wherever I want to, with my mouse while it's reading"): a drag
     // moves the band up or down only (every screen follows, the place is kept in subtitle.json `ypos`); a click never
     // hides it; a double-click opens the answer box, as a single click did before.
-    var onDrag: (CGFloat) -> Void = { _ in }            // the band's new centre y, in screen points
+    // v57 (Marko, 15.11.2026: "I can move the blob ... only up and down. Please free it completely ... then I can move it where I want
+    // and then you remember the last position"): a drag anywhere on the card moves the window in every direction, onto any screen.
+    var onDrag: (NSPoint) -> Void = { _ in }            // the window's new origin, in screen points
     var onDragEnd: () -> Void = {}
-    private var grab: CGFloat?, startCentre: CGFloat = 0, moved = false
+    private var grab: NSPoint?, startOrigin = NSPoint.zero, moved = false
     override var isFlipped: Bool { true }                // top-left, as voice.lua laid it out
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
-    override func resetCursorRects() { addCursorRect(bounds, cursor: .resizeUpDown) }
+    override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
     override func mouseDown(with e: NSEvent) {
         onDragEnd()          // v45: a drag whose release was lost is saved now
-        grab = NSEvent.mouseLocation.y; startCentre = window?.frame.midY ?? 0; moved = false
+        grab = NSEvent.mouseLocation; startOrigin = window?.frame.origin ?? .zero; moved = false
     }
     override func mouseDragged(with e: NSEvent) {
         guard let g = grab else { return }
-        let dy = NSEvent.mouseLocation.y - g
-        if abs(dy) > 3 { moved = true }
-        if moved { onDrag(startCentre + dy) }
+        let m = NSEvent.mouseLocation, dx = m.x - g.x, dy = m.y - g.y
+        if abs(dx) > 3 || abs(dy) > 3 { moved = true }
+        if moved { onDrag(NSPoint(x: startOrigin.x + dx, y: startOrigin.y + dy)) }
     }
     override func mouseUp(with e: NSEvent) {
         let wasDrag = moved; grab = nil; moved = false
@@ -191,8 +193,28 @@ final class BandView: NSView {
     func srcFont(size h: CGFloat) -> CGFloat { max(11, (h - 6) / 2 / 1.25) }
 }
 
+/// v57: the last place of the subtitle window: its centre and the display it was on (UserDefaults of this app)
+enum SubPos {
+    static func load() -> NSPoint? {
+        let d = UserDefaults.standard
+        guard d.object(forKey: "subCX") != nil, d.object(forKey: "subCY") != nil else { return nil }
+        return NSPoint(x: d.double(forKey: "subCX"), y: d.double(forKey: "subCY"))
+    }
+    static func displayID(_ s: NSScreen) -> UInt32 { (s.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0 }
+    static func save(_ c: NSPoint, _ s: NSScreen) {
+        let d = UserDefaults.standard
+        d.set(Double(c.x), forKey: "subCX"); d.set(Double(c.y), forKey: "subCY"); d.set(Int(displayID(s)), forKey: "subDisplay")
+    }
+    /// the saved screen if it is still there, else the MacBook's own screen, else the first
+    static func homeScreen() -> NSScreen? {
+        let id = UInt32(UserDefaults.standard.integer(forKey: "subDisplay"))
+        if id != 0, let s = NSScreen.screens.first(where: { displayID($0) == id }) { return s }
+        return NSScreen.screens.first(where: { CGDisplayIsBuiltin(displayID($0)) != 0 }) ?? NSScreen.screens.first
+    }
+}
+
 final class ScreenSub {
-    let screen: NSScreen
+    var screen: NSScreen
     let panel: NSPanel
     let band = BandView()
     var size: CGFloat = 40
@@ -205,7 +227,7 @@ final class ScreenSub {
         panel.hidesOnDeactivate = false; panel.becomesKeyOnlyIfNeeded = true
         panel.contentView = band
         band.onClick = { [weak engine] in engine?.answer() }
-        band.onDrag = { [weak engine, weak self] y in if let s = self { engine?.dragTo(y, on: s) } }
+        band.onDrag = { [weak engine, weak self] o in if let s = self { engine?.dragTo(o, on: s) } }
         band.onDragEnd = { [weak engine] in engine?.dragDone() }
         // v29 (Marko, 4.11.2026: "Hide hides the subtitle, so I don't need to reach for the menu bar. Stop stops the talking
         // completely ... These two controls I need on the right side. All other controls can just disappear ... They can
@@ -252,13 +274,17 @@ final class ScreenSub {
         let h = ceil(lines * size * 1.22 + size * 0.5 + kh) + sh   // v54: no empty space
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
-        if c.ypos >= 0 { y = ScreenSub.clampY(vf.minY + CGFloat(c.ypos) * vf.height - h / 2, h, vf) }   // v18: dragged
-        panel.setFrame(NSRect(x: vf.minX + floor((vf.width - pw) / 2), y: y, width: pw, height: h), display: false)
+        var x = vf.minX + floor((vf.width - pw) / 2)
+        if let cen = SubPos.load() {                                   // v57: the place he dragged it to
+            let r = ScreenSub.clampRect(NSRect(x: cen.x - pw / 2, y: cen.y - h / 2, width: pw, height: h), vf)
+            x = r.minX; y = r.minY
+        }
+        panel.setFrame(NSRect(x: x, y: y, width: pw, height: h), display: false)
         let main = NSScreen.screens.first.map { $0 == screen } ?? false
         let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
         _ = alpha; band.ctrlTop = h - kh        // v51: the card is always dark; `band`, `grey`, `bandmain` no longer paint a grey band
         band.srcRect = NSRect(x: 24, y: 12, width: room, height: sh - 12)
-        panel.invalidateShadow()
+        
         band.textRect = NSRect(x: 24, y: sh + max(4, (h - sh - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
         let keys = keyViews
         for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 4 }                  // x: SubtitleEngine.placeKeys
@@ -273,6 +299,10 @@ final class ScreenSub {
         band.textRect.origin.y = sh + max(4, (h - sh - kh - n * size * 1.22) / 2 - size * 0.08)
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
+    /// v57: the rectangle moved so that it lies completely inside the visible frame
+    static func clampRect(_ r: NSRect, _ vf: NSRect) -> NSRect {
+        NSRect(x: min(max(r.minX, vf.minX), max(vf.minX, vf.maxX - r.width)), y: clampY(r.minY, r.height, vf), width: r.width, height: r.height)
+    }
     /// v18: the band moved so its centre is at this fraction of the screen's height (0 bottom, 1 top), height kept
     func moveTo(fraction f: CGFloat) {
         let vf = screen.visibleFrame, h = panel.frame.height
@@ -329,7 +359,7 @@ final class SubtitleEngine {
         if !subs.isEmpty {                                      // v41: panels kept from before: order them front again, check them
             subs.forEach { $0.show() }; verifyShown(retry: true); return
         }
-        subs = NSScreen.screens.map { ScreenSub($0, self) }
+        subs = [ScreenSub(SubPos.homeScreen() ?? NSScreen.screens[0], self)]   // v57: ONE window on ONE screen
         subs.forEach { $0.show() }
         verifyShown(retry: true)
     }
@@ -350,7 +380,7 @@ final class SubtitleEngine {
             if bad.isEmpty { return }
             subLog("panels not on screen (\(bad.count) of \(self.subs.count)); " + (retry ? "recreating" : "giving up"))
             if retry {
-                self.drop(); self.subs = NSScreen.screens.map { ScreenSub($0, self) }
+                self.drop(); self.subs = [ScreenSub(SubPos.homeScreen() ?? NSScreen.screens[0], self)]   // v57: ONE window on ONE screen
                 self.show(self.text, self.words)
                 self.subs.forEach { $0.show() }
                 self.verifyShown(retry: false)
@@ -497,24 +527,21 @@ final class SubtitleEngine {
         // v18: the subtitle stays (Marko, 31.10.2026: "I clicked on the subtitle itself and it disappeared")
     }
 
-    // v18: dragging. The band on the screen under the mouse follows it; every other screen takes the same height fraction
-    var dragFraction: CGFloat?
-    func dragTo(_ centreY: CGFloat, on s: ScreenSub) {
-        let vf = s.screen.visibleFrame
-        let f = min(max((centreY - vf.minY) / vf.height, 0), 1)
-        dragFraction = f
-        for x in subs { x.moveTo(fraction: f) }
-        // v45: the position is saved while dragging (at most every 0.1 s), so a release that lands in another view, or never
-        // arrives, cannot lose it; dragDone() writes the last value
-        let now = Date().timeIntervalSince1970
-        if now - lastDragSave > 0.1 { lastDragSave = now; saveYpos(f) }
-    }
+    // v57: free dragging of the one window. The centre is saved while dragging (at most every 0.1 s) and at the release, with the
+    // screen it lies on; the window is then put fully on that screen.
     var lastDragSave = 0.0
-    func saveYpos(_ f: CGFloat) { var c = SubtitleSettings.load(); c.ypos = Double(f); c.save(); conf = c }
+    func dragTo(_ origin: NSPoint, on s: ScreenSub) {
+        s.panel.setFrameOrigin(origin)
+        let now = Date().timeIntervalSince1970
+        if now - lastDragSave > 0.1 { lastDragSave = now; SubPos.save(NSPoint(x: s.panel.frame.midX, y: s.panel.frame.midY), s.screen) }
+    }
     func dragDone() {
-        guard let f = dragFraction else { return }
-        dragFraction = nil
-        saveYpos(f)
+        guard let s = subs.first else { return }
+        let f = s.panel.frame, c = NSPoint(x: f.midX, y: f.midY)
+        if let scr = NSScreen.screens.first(where: { $0.frame.contains(c) }) ?? SubPos.homeScreen() { s.screen = scr }
+        let r = ScreenSub.clampRect(f, s.screen.visibleFrame)
+        s.panel.setFrame(r, display: true)
+        SubPos.save(NSPoint(x: r.midX, y: r.midY), s.screen)
     }
     /// v18: the blob brings the subtitle back while she reads: CC on, dismissal forgotten, following again
     func bringBack() {

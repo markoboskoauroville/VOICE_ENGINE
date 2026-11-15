@@ -24,7 +24,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 56
+let VERSION = 57
 let APP_NAME = "Voice Engine (Mantra)"
 
 struct SubtitleSettings: Codable, Equatable {
@@ -585,11 +585,11 @@ struct Settings: View {
                             Word(text: "OFF", on: !m.s.bandmain) { m.s.bandmain = false }
                         }
                     }
-                    Row(name: "WHERE ON THE SCREEN", value: m.s.ypos >= 0 ? "WHERE YOU DRAGGED IT" : m.s.position.uppercased()) {
+                    Row(name: "WHERE ON THE SCREEN", value: SubPos.load() != nil ? "WHERE YOU DRAGGED IT" : m.s.position.uppercased()) {
                         HStack {
                             ForEach(["top", "middle", "bottom"], id: \.self) { p in
                                 // v20: a click places it there, also after a drag (the drag kept `ypos`, which won over this choice)
-                                Word(text: p.uppercased(), on: m.s.ypos < 0 && m.s.position == p) { m.s.ypos = -1; m.s.position = p }
+                                Word(text: p.uppercased(), on: SubPos.load() == nil && m.s.position == p) { for k in ["subCX", "subCY", "subDisplay"] { UserDefaults.standard.removeObject(forKey: k) }; m.s.ypos = -1; m.s.position = p; SubtitleEngine.shared.rebuild() }
                             }
                             Spacer()
                         }

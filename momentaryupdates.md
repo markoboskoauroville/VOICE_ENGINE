@@ -291,3 +291,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "Also I have two application, one is voice to text and another is voice engine. And they both have same icon so I am confused. Let the voice to text be red icon and let the engine be green icon."
 
 **Status:** DONE 15.11.2026, v56 green icon.
+
+## 15.11.2026 (v57): free window, one screen
+"And by the way, now I want that this voice engine which types on the screen, I can move the blob with the text only up and down. Please free it completely. And please write it only on one screen and then I can move it where I want and then you remember the last position."
+
+**Status:** in progress (v57).
