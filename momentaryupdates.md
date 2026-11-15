@@ -276,3 +276,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "the same design we need for these subtitles. Look at subtitles of TTT which are coming above the keyboard. We want the same design here. We are improving the design."
 
 **Status:** DONE 14.11.2026, v53 (v51 and v52 were built first; v52 changed the colours to TTT's, v52's card fill was lost to a comment, fixed in v53): GitHub run 43604956339 green, release v53 Latest, installed, signed Mantra Apps, seen in a screenshot on the MacBook screen.
+
+## 15.11.2026 (v54): stuck Play, one row, transparent
+"Please fix, by the way, the voice thing. Now it wants to say something, and it's stuck. I merely just need to press Play, but this button in this kind of pyramid shape is ineffective. Make all buttons in one line, please. Make the vertical size less, and make this background transparent, maybe 20%."
+
+**Status:** in progress (v54).
