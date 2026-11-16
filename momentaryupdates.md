@@ -305,4 +305,4 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 16.11.2026 (v59): own resize edges, text inside its own area
 "Please fix my voice engine subtitle part. It needs to have resizing so if I drag from left or right edge it resizes the subtitles horizontally. if I drag for the corners it resize both axis horizontal and vertical and make sure text never leave its border doesn't go under the buttons or anything it must be in his own area all the time"
 
-**Status:** in work 16.11.2026, v59.
+**Status:** built 16.11.2026, v59 (see TAKEOVER).

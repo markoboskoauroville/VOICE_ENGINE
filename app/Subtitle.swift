@@ -148,18 +148,56 @@ final class BandView: NSView {
     private var grab: NSPoint?, startOrigin = NSPoint.zero, moved = false
     override var isFlipped: Bool { true }                // top-left, as voice.lua laid it out
     override func acceptsFirstMouse(for e: NSEvent?) -> Bool { true }
-    override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
+    // v59: the card's own resize zones (a borderless panel gets no system handles): 8 pt along each edge, 14 pt squares at the corners
+    static let EDGE: CGFloat = 8, CORNER: CGFloat = 14
+    enum Zone { case none, l, r, t, b, tl, tr, bl, br }
+    func zone(at p: NSPoint) -> Zone {            // p in view coordinates (flipped: y down)
+        let w = bounds.width, h = bounds.height, e = BandView.EDGE, c = BandView.CORNER
+        let nl = p.x < c, nr = p.x > w - c, nt = p.y < c, nb = p.y > h - c
+        if nl && nt { return .tl }; if nr && nt { return .tr }; if nl && nb { return .bl }; if nr && nb { return .br }
+        if p.x < e { return .l }; if p.x > w - e { return .r }; if p.y < e { return .t }; if p.y > h - e { return .b }
+        return .none
+    }
+    override func resetCursorRects() {
+        let w = bounds.width, h = bounds.height, e = BandView.EDGE, c = BandView.CORNER
+        addCursorRect(bounds, cursor: .openHand)
+        addCursorRect(NSRect(x: 0, y: c, width: e, height: h - 2 * c), cursor: .resizeLeftRight)
+        addCursorRect(NSRect(x: w - e, y: c, width: e, height: h - 2 * c), cursor: .resizeLeftRight)
+        addCursorRect(NSRect(x: c, y: 0, width: w - 2 * c, height: e), cursor: .resizeUpDown)
+        addCursorRect(NSRect(x: c, y: h - e, width: w - 2 * c, height: e), cursor: .resizeUpDown)
+        for r in [NSRect(x: 0, y: 0, width: c, height: c), NSRect(x: w - c, y: h - c, width: c, height: c),
+                  NSRect(x: w - c, y: 0, width: c, height: c), NSRect(x: 0, y: h - c, width: c, height: c)] { addCursorRect(r, cursor: .crosshair) }
+    }
+    override func layout() { super.layout(); window?.invalidateCursorRects(for: self) }
+    private var rz = Zone.none, rzStart = NSRect.zero, rzMouse = NSPoint.zero
+    /// the frame of the card for a drag of dx, dy (screen points, y up) from the zone: the edge under the pointer follows it
+    static func resized(_ f: NSRect, _ z: Zone, _ dx: CGFloat, _ dy: CGFloat, _ mn: NSSize, _ mx: NSSize) -> NSRect {
+        var x0 = f.minX, x1 = f.maxX, y0 = f.minY, y1 = f.maxY
+        switch z { case .l, .tl, .bl: x0 = min(f.maxX - mn.width, max(f.maxX - mx.width, f.minX + dx)); default: break }
+        switch z { case .r, .tr, .br: x1 = max(f.minX + mn.width, min(f.minX + mx.width, f.maxX + dx)); default: break }
+        switch z { case .t, .tl, .tr: y1 = max(f.minY + mn.height, min(f.minY + mx.height, f.maxY + dy)); default: break }
+        switch z { case .b, .bl, .br: y0 = min(f.maxY - mn.height, max(f.maxY - mx.height, f.minY + dy)); default: break }
+        return NSRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0)
+    }
     override func mouseDown(with e: NSEvent) {
         onDragEnd()          // v45: a drag whose release was lost is saved now
+        rz = zone(at: convert(e.locationInWindow, from: nil))
+        if rz != .none, let w = window { rzStart = w.frame; rzMouse = NSEvent.mouseLocation; grab = nil; return }
         grab = NSEvent.mouseLocation; startOrigin = window?.frame.origin ?? .zero; moved = false
     }
     override func mouseDragged(with e: NSEvent) {
+        if rz != .none, let w = window {          // v59: the edge follows the pointer, from where the button went down
+            let m = NSEvent.mouseLocation
+            w.setFrame(BandView.resized(rzStart, rz, m.x - rzMouse.x, m.y - rzMouse.y, w.minSize, w.maxSize), display: true)
+            return
+        }
         guard let g = grab else { return }
         let m = NSEvent.mouseLocation, dx = m.x - g.x, dy = m.y - g.y
         if abs(dx) > 3 || abs(dy) > 3 { moved = true }
         if moved { onDrag(NSPoint(x: startOrigin.x + dx, y: startOrigin.y + dy)) }
     }
     override func mouseUp(with e: NSEvent) {
+        if rz != .none { rz = .none; onDragEnd(); return }
         let wasDrag = moved; grab = nil; moved = false
         if wasDrag { onDragEnd(); return }
         if e.clickCount == 2 { onClick() }
@@ -172,7 +210,13 @@ final class BandView: NSView {
         let card = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 20, yRadius: 20)
         NSColor(calibratedRed: 0x1E / 255, green: 0x1E / 255, blue: 0x20 / 255, alpha: 0.8).setFill(); card.fill()   // v55: 80 % opaque, 20 % see-through; text and icons opaque   // v53: TTT's MaSubtitleBackground 0xFF1E1E20, radius 20
         NSColor(white: 1, alpha: 0.10).setStroke(); card.lineWidth = 1; card.stroke()
-        text.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
+        if text.length > 0 {                                 // v59: the sentence lives in its own rectangle, clipped to it, centred in it
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(rect: textRect).addClip()
+            let bh = ceil(text.boundingRect(with: NSSize(width: textRect.width, height: 10000), options: [.usesLineFragmentOrigin, .usesFontLeading]).height)
+            text.draw(with: NSRect(x: textRect.minX, y: textRect.minY + max(0, (textRect.height - bh) / 2), width: textRect.width, height: min(bh, textRect.height)), options: [.usesLineFragmentOrigin, .usesFontLeading])
+            NSGraphicsContext.restoreGraphicsState()
+        }
         NSColor(white: 1, alpha: 0.08).setFill()
         NSRect(x: 28, y: ctrlTop - 2, width: bounds.width - 56, height: 1).fill()
         if source.isEmpty { return }
@@ -242,6 +286,7 @@ final class ScreenSub {
             self.applyGeometry()
             engine?.placeKeys(self); engine?.paint(engine?.lit ?? -1)
             let f = self.panel.frame
+            subLog("geometry w=\(Int(f.width)) h=\(Int(f.height)) font=\(Int(self.size)) text=\(self.band.textRect) ctrlTop=\(self.band.ctrlTop) srcBottom=\(self.band.srcRect.maxY)")
             SubSize.save(f.size); SubPos.save(NSPoint(x: f.midX, y: f.midY), self.screen)
         }
         band.onClick = { [weak engine] in engine?.answer() }
@@ -285,6 +330,26 @@ final class ScreenSub {
     static let KH: CGFloat = ROWH + 8                 // the row of keys under the text (fixed)
     static let minW: CGFloat = ROWW[0] + 56, minH: CGFloat = 59 + ROWH + 8 + 64
     var laying = false
+    /// v59: the sentence's own rectangle: between the top strip and the control row, 24 pt at the sides, 8 pt above and below
+    static func textArea(_ w: CGFloat, _ h: CGFloat) -> NSRect {
+        NSRect(x: 24, y: SH + 8, width: max(60, w - 48), height: max(20, h - SH - KH - 16))
+    }
+    /// the largest font size at which the whole chunk fits the rectangle, words whole (binary search on the measured height)
+    static func fit(_ str: String, _ r: NSRect, bold: Bool) -> CGFloat {
+        func font(_ z: CGFloat) -> NSFont { NSFont(name: bold ? FONT + " Bold" : FONT, size: z) ?? .systemFont(ofSize: z) }
+        let p = NSMutableParagraphStyle(); p.alignment = .center; p.lineBreakMode = .byWordWrapping
+        let words = str.split(separator: " ").map(String.init)
+        func fits(_ z: CGFloat) -> Bool {
+            let at: [NSAttributedString.Key: Any] = [.font: font(z), .paragraphStyle: p]
+            for w in words where (w as NSString).size(withAttributes: at).width > r.width { return false }      // a word is never broken
+            let bh = (str as NSString).boundingRect(with: NSSize(width: r.width, height: 100000), options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: at).height
+            return ceil(bh) <= r.height
+        }
+        var lo: CGFloat = 8, hi: CGFloat = 400
+        if !fits(lo) { return lo }
+        while hi - lo > 0.5 { let m = (lo + hi) / 2; if fits(m) { lo = m } else { hi = m } }
+        return floor(lo)
+    }
     /// the font follows the card: the text area's height holds two lines, its width about seven letters per size unit
     func applyGeometry() {
         let w = panel.frame.width, h = panel.frame.height
@@ -293,7 +358,7 @@ final class ScreenSub {
         size = max(12, floor(min(areaH / 2.94, room / 7)))
         band.ctrlTop = h - ScreenSub.KH
         band.srcRect = NSRect(x: 24, y: 12, width: room, height: ScreenSub.SH - 12)
-        band.textRect = NSRect(x: 24, y: ScreenSub.SH + max(4, (areaH - 2 * size * 1.22) / 2 - size * 0.08), width: room, height: h)
+        band.textRect = ScreenSub.textArea(w, h)
         for k in keyViews { k.frame.origin.y = h - ScreenSub.KH + CGFloat(k.row) * ROWH + 4 }
         band.needsDisplay = true
     }
@@ -322,15 +387,8 @@ final class ScreenSub {
         laying = false
         applyGeometry()
     }
-    /// v43: the chunk's lines (1 or 2) put in the middle of the band's text part
-    func place(_ chunk: String, _ c: SubtitleSettings) {
-        let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
-        let wide = (chunk as NSString).size(withAttributes: [.font: font]).width
-        let room = band.textRect.width
-        let n = max(1, min(2, ceil(wide / (room * 0.92))))
-        let h = panel.frame.height, kh = ScreenSub.KH, sh = ScreenSub.SH
-        band.textRect.origin.y = sh + max(4, (h - sh - kh - n * size * 1.22) / 2 - size * 0.08)
-    }
+    /// v59: the text rectangle is fixed by the card's size; `place` is gone (the text is centred in it when drawn)
+    func place(_ chunk: String, _ c: SubtitleSettings) { size = ScreenSub.fit(chunk, band.textRect, bold: c.bold) }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
     /// v57: the rectangle moved so that it lies completely inside the visible frame
     static func clampRect(_ r: NSRect, _ vf: NSRect) -> NSRect {
@@ -490,7 +548,6 @@ final class SubtitleEngine {
         for (ci, r) in chunkRanges.enumerated() { for i in r.0...r.1 { chunkOf[i] = ci } }
     }
     func styled(_ s: ScreenSub, _ k: Int) -> NSAttributedString {
-        let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: s.size) ?? .systemFont(ofSize: s.size)
         let p = NSMutableParagraphStyle(); p.alignment = .center; p.lineBreakMode = .byWordWrapping
         let col = nscolour(conf.colour) ?? nscolour("#E8A33D")!
         // v37 (Marko, 8.11.2026: "they don't have shadow. So if something is in the background I don't see make a hard
@@ -508,7 +565,8 @@ final class SubtitleEngine {
                 base = a; shown = String(String.UnicodeScalarView(scalars[a..<b]))
             }
         }
-        s.place(shown, conf)
+        s.place(shown, conf)          // v59: the largest size that fits the card's text rectangle
+        let font = NSFont(name: conf.bold ? FONT + " Bold" : FONT, size: s.size) ?? .systemFont(ofSize: s.size)
         let a = NSMutableAttributedString(string: shown, attributes: [.font: font, .foregroundColor: col, .paragraphStyle: p])
         if k >= 0, k < words.count, let st = words[k].s, let en = words[k].e {
             // the server counts characters (code points), NSString counts UTF-16: convert

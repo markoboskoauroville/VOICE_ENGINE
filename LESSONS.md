@@ -89,3 +89,6 @@ MicGuard (voiced.py) re-paused the reading 0.12 s after every Play while Speechi
 - The long-lived app (started 06:53) had its card panel with kCGWindowIsOnscreen nil; subtitle.log showed `panels not on screen ... recreating / giving up` every ~2 min from 06:20. Same family as v41. Quit + reopen (voicectl start) fixed it. v58 does that by itself on the second failure.
 - The card's height used to be computed from the font; now the font is computed from the card (areaH/2.94, width/7), so the user can resize. Only the font moves; fixed: strip 59, key row 60.
 - Capturing the BenQ is not allowed: prove with the window-server flag + AX frames of the buttons.
+
+## 16.11.2026 (v59): .resizable on a borderless NSPanel does nothing by hand
+- AX AXSize worked, the mouse did not: there are no edge handles. Draw your own zones in the content view and move the frame from the mouse-down delta. The font is fitted to the text rectangle by measuring, never by a formula on the card's height.
