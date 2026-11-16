@@ -39,6 +39,23 @@ enum HoverCard {
         s.append(NSAttributedString(string: " \u{2502}", attributes: pipe))
         return s
     }
+    /// Right pipe only, for items whose icon carries the left pipe (pipedIcon): attributedTitle = rightPipe() (+ words before it).
+    static func rightPipe() -> NSAttributedString {
+        NSAttributedString(string: " \u{2502}", attributes: [.font: NSFont.systemFont(ofSize: 11, weight: .ultraLight), .foregroundColor: pipeColor])
+    }
+    /// An icon with a thin grey pipe drawn at its left edge (the item then ends with rightPipe()). Template stays template.
+    static func pipedIcon(_ img: NSImage?) -> NSImage? {
+        guard let img else { return nil }
+        let pad: CGFloat = 5, h = max(img.size.height, 16)
+        let out = NSImage(size: NSSize(width: img.size.width + pad, height: h), flipped: false) { r in
+            (img.isTemplate ? NSColor(white: 0, alpha: 0.5) : pipeColor).setFill()
+            NSRect(x: 0, y: (r.height - 14) / 2, width: 1, height: 14).fill()
+            img.draw(in: NSRect(x: pad, y: (r.height - img.size.height) / 2, width: img.size.width, height: img.size.height))
+            return true
+        }
+        out.isTemplate = img.isTemplate
+        return out
+    }
     /// For a view item: ~1 pt wide, ~14 pt tall pipes at both edges (unflipped or flipped view alike).
     static func drawPipes(in b: NSRect) {
         pipeColor.setFill()
@@ -67,11 +84,11 @@ enum HoverCard {
             let t = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
             button.addTrackingArea(t)
         }
-        override func mouseEntered(with e: NSEvent) {
+        @objc func mouseEntered(with e: NSEvent) {
             timer?.invalidate()
             timer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in self?.show() }
         }
-        override func mouseExited(with e: NSEvent) { timer?.invalidate(); if !HoverCard.debugShot { hide() } }
+        @objc func mouseExited(with e: NSEvent) { timer?.invalidate(); if !HoverCard.debugShot { hide() } }
 
         func hide() { refresh?.invalidate(); panel?.orderOut(nil); panel = nil }
 
@@ -84,7 +101,7 @@ enum HoverCard {
             p.backgroundColor = .clear; p.isOpaque = false; p.hasShadow = true; p.ignoresMouseEvents = true
             p.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
             p.contentView = view
-            let size = view.fittingSize
+            let size = view.cardSize
             let bf = win.convertToScreen(button.convert(button.bounds, to: nil))
             var x = bf.midX - size.width / 2
             if let scr = win.screen ?? NSScreen.main { x = min(max(x, scr.frame.minX + 6), scr.frame.maxX - size.width - 6) }
@@ -95,7 +112,7 @@ enum HoverCard {
             refresh = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 guard let self, let p = self.panel else { return }
                 let v = CardView(self.provider()); p.contentView = v
-                let s = v.fittingSize; var f = p.frame; f.origin.y += f.height - s.height; f.size = s; p.setFrame(f, display: true)
+                let s = v.cardSize; var f = p.frame; f.origin.y += f.height - s.height; f.size = s; p.setFrame(f, display: true)
             }
         }
     }
@@ -113,10 +130,10 @@ enum HoverCard {
             for l in c.lines.prefix(4) { r.append((l, CardView.mono, NSColor(white: 1, alpha: 0.85))) }
             rows = r
             super.init(frame: .zero)
-            frame.size = fittingSize
+            frame.size = cardSize
         }
         required init?(coder: NSCoder) { fatalError() }
-        var fittingSize: NSSize {
+        var cardSize: NSSize {
             let w = rows.map { ($0.0 as NSString).size(withAttributes: [.font: $0.1]).width }.max() ?? 80
             let h = rows.reduce(CGFloat(20)) { $0 + ($1.0 as NSString).size(withAttributes: [.font: $1.1]).height + 3 }
             return NSSize(width: ceil(min(max(w, 140), 340)) + 28, height: ceil(h) + 2)
