@@ -12,6 +12,30 @@ final class MenuControls: NSObject {
     var paused = false, held = "", quiet = 0
     var clickedAt = Date.distantPast      // v30: a click wins over the next poll for 1.5 s (no flicker back)
 
+    /// pipes (kit menubar-hover): the group reads PLAY ■ SUB, so a thin pipe stands before the leftmost and after the rightmost item
+    private func piped(_ img: NSImage?, left: Bool, right: Bool) -> NSImage? {
+        guard let img else { return nil }
+        let tmpl = img.isTemplate, pad: CGFloat = 4
+        let out = NSImage(size: NSSize(width: img.size.width + pad * 2, height: max(img.size.height, 16)), flipped: false) { r in
+            (tmpl ? NSColor(white: 0, alpha: 0.5) : HoverCard.pipeColor).setFill()
+            if left { NSRect(x: 0, y: (r.height - 14) / 2, width: 1, height: 14).fill() }
+            if right { NSRect(x: r.width - 1, y: (r.height - 14) / 2, width: 1, height: 14).fill() }
+            img.draw(in: NSRect(x: pad, y: (r.height - img.size.height) / 2, width: img.size.width, height: img.size.height))
+            return true
+        }
+        out.isTemplate = tmpl
+        return out
+    }
+
+    private func card(_ what: String, _ state: String, _ color: NSColor = .white, _ lines: [String]) -> HoverCard.Content {
+        HoverCard.Content(name: "Voice Engine (Mantra)", what: what, state: state, stateColor: color, lines: lines)
+    }
+    private func engineLines() -> [String] {
+        let c = SubtitleEngine.shared
+        return ["Voice: Marko's clone on :8837", "Reading: " + (paused ? "paused" : held.isEmpty ? "speaking" : "held (" + held + ")"),
+                "Subtitles: " + (c.conf.subtitles ? "on" : "off")]
+    }
+
     private func symbol(_ name: String, _ desc: String) -> NSImage? {
         let img = NSImage(systemSymbolName: name, accessibilityDescription: desc)
         img?.isTemplate = true
@@ -30,6 +54,9 @@ final class MenuControls: NSObject {
         u.button?.setAccessibilityLabel("SUB")
         u.button?.setAccessibilityIdentifier("sub")
         subItem = u
+        HoverCard.attach(to: u) { [weak self] in
+            guard let self else { return HoverCard.Content(name: "Voice Engine (Mantra)", what: "", state: "") }
+            return self.card("Subtitles for what the cloned voice reads", SubtitleEngine.shared.conf.subtitles ? "SUBTITLES ON" : "SUBTITLES OFF", .systemOrange, self.engineLines()) }
         paint()
     }
 
@@ -47,6 +74,12 @@ final class MenuControls: NSObject {
         p.button?.target = self; p.button?.action = #selector(play)
         p.button?.setAccessibilityLabel("PAUSE")
         stopItem = s; playItem = p
+        HoverCard.attach(to: s) { [weak self] in
+            guard let self else { return HoverCard.Content(name: "Voice Engine (Mantra)", what: "", state: "") }
+            return self.card("The cloned voice reads answers aloud (Speechify, Marko's clone)", "SPEAKING", .systemGreen, self.engineLines() + ["Click: stop the reading"]) }
+        HoverCard.attach(to: p) { [weak self] in
+            guard let self else { return HoverCard.Content(name: "Voice Engine (Mantra)", what: "", state: "") }
+            return self.card("The cloned voice reads answers aloud (Speechify, Marko's clone)", self.paused ? "PAUSED" : "SPEAKING", self.paused ? .systemOrange : .systemGreen, self.engineLines() + ["Click: " + (self.paused ? "play on" : "pause")]) }
         paint()
     }
 
@@ -94,14 +127,14 @@ final class MenuControls: NSObject {
     private func paint() {
         if let ub = subItem?.button {
             let on = SubtitleEngine.shared.conf.subtitles
-            ub.image = subImage(on)
+            ub.image = piped(subImage(on), left: false, right: true)
             ub.contentTintColor = nil
             ub.toolTip = on ? "Subtitles ON. Click: off" : "Subtitles OFF. Click: on"
             ub.setAccessibilityValue(on ? "on" : "off")
         }
         guard let b = playItem?.button else { return }
         let orange = paused || !held.isEmpty
-        b.image = playImage(orange); b.contentTintColor = nil
+        b.image = piped(playImage(orange), left: true, right: false); b.contentTintColor = nil
         b.toolTip = !held.isEmpty ? "Held: \(held). Click: read anyway"
                   : paused ? "Paused. Click: play on" : "Playing. Click: pause"
         b.setAccessibilityLabel(!held.isEmpty ? "READ ANYWAY" : paused ? "PLAY" : "PAUSE")

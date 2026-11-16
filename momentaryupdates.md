@@ -306,3 +306,7 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "Please fix my voice engine subtitle part. It needs to have resizing so if I drag from left or right edge it resizes the subtitles horizontally. if I drag for the corners it resize both axis horizontal and vertical and make sure text never leave its border doesn't go under the buttons or anything it must be in his own area all the time"
 
 **Status:** built 16.11.2026, v59 (see TAKEOVER).
+
+## 16.11.2026: hover card and pipes (Marko, 16.11.2026)
+"Please with all my apps on the menu bar, make a comprehensive pop-up menu. When I hover over, I want to see what is it and what is it doing." and "for my apps always make a pipes before and after so I know where one app ends and other begins."
+**Status:** saved first; building in v60 (HoverCard kit; pipes before the leftmost and after the rightmost item of the group).
