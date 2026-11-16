@@ -296,3 +296,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 "And by the way, now I want that this voice engine which types on the screen, I can move the blob with the text only up and down. Please free it completely. And please write it only on one screen and then I can move it where I want and then you remember the last position."
 
 **Status:** DONE 15.11.2026, v57 (run 43707865230 green, Latest, installed).
+
+## 16.11.2026 (v58): resizable subtitle, only the text scales
+"Please fix the voice engine subtitles so I can actually resize the window itself. And as I am resizing, only thing which is changing size is the text size of the subtitles, rest stay the same."
+
+**Status:** in work 16.11.2026, v58.
