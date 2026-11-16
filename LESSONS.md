@@ -92,3 +92,6 @@ MicGuard (voiced.py) re-paused the reading 0.12 s after every Play while Speechi
 
 ## 16.11.2026 (v59): .resizable on a borderless NSPanel does nothing by hand
 - AX AXSize worked, the mouse did not: there are no edge handles. Draw your own zones in the content view and move the frame from the mouse-down delta. The font is fitted to the text rectangle by measuring, never by a formula on the card's height.
+
+## Lesson: hover card and pipes (16.11.2026)
+Poll the mouse (macOS draws a status item once per display, only one copy owns the button, so a tracking area misses the other display). The panel needs `titleVisibility = .hidden` for the one-title guard. A non-activating NSPanel at statusBar+1 never takes focus. Pipes for text items: attributed title; for icon items: pipedIcon + rightPipe; for view items: drawPipes or PipesView.
