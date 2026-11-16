@@ -193,6 +193,16 @@ final class BandView: NSView {
     func srcFont(size h: CGFloat) -> CGFloat { max(11, (h - 6) / 2 / 1.25) }
 }
 
+/// v58: the size of the subtitle card (UserDefaults subW, subH)
+enum SubSize {
+    static func load() -> NSSize? {
+        let d = UserDefaults.standard
+        guard d.object(forKey: "subW") != nil, d.object(forKey: "subH") != nil else { return nil }
+        return NSSize(width: d.double(forKey: "subW"), height: d.double(forKey: "subH"))
+    }
+    static func save(_ s: NSSize) { let d = UserDefaults.standard; d.set(Double(s.width), forKey: "subW"); d.set(Double(s.height), forKey: "subH") }
+}
+
 /// v57: the last place of the subtitle window: its centre and the display it was on (UserDefaults of this app)
 enum SubPos {
     static func load() -> NSPoint? {
@@ -220,12 +230,20 @@ final class ScreenSub {
     var size: CGFloat = 40
     init(_ screen: NSScreen, _ engine: SubtitleEngine) {
         self.screen = screen
-        panel = NSPanel(contentRect: screen.visibleFrame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel = NSPanel(contentRect: screen.visibleFrame, styleMask: [.borderless, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.overlayWindow)))
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
         panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = false   // v54: a 20 % card casts no shadow
         panel.hidesOnDeactivate = false; panel.becomesKeyOnlyIfNeeded = true
         panel.contentView = band
+        // v58: a resize by the edges or corners (or from outside, by AX) re-lays the card: the font follows, the keys stay put
+        NotificationCenter.default.addObserver(forName: NSWindow.didResizeNotification, object: panel, queue: .main) { [weak self, weak engine] _ in
+            guard let self = self, !self.laying else { return }
+            self.applyGeometry()
+            engine?.placeKeys(self); engine?.paint(engine?.lit ?? -1)
+            let f = self.panel.frame
+            SubSize.save(f.size); SubPos.save(NSPoint(x: f.midX, y: f.midY), self.screen)
+        }
         band.onClick = { [weak engine] in engine?.answer() }
         band.onDrag = { [weak engine, weak self] o in if let s = self { engine?.dragTo(o, on: s) } }
         band.onDragEnd = { [weak engine] in engine?.dragDone() }
@@ -260,34 +278,49 @@ final class ScreenSub {
     }
     var keyViews: [KeyLabel] { band.subviews.compactMap { $0 as? KeyLabel } }
 
-    // how tall the band must be for this text on this screen: the lines it wraps to, at the subtitle's size
+    // v58 (Marko, 16.11.2026: "resize the window itself ... only thing which is changing size is the text size of the subtitles"):
+    // the card is a resizable window; its size is kept (subW, subH). Only the sentence's font follows the card; the strip at the top,
+    // the row of controls, the paddings and the highlight style keep their size.
+    static let SH: CGFloat = 59                       // the strip at the top for who is talking (fixed)
+    static let KH: CGFloat = ROWH + 8                 // the row of keys under the text (fixed)
+    static let minW: CGFloat = ROWW[0] + 56, minH: CGFloat = 59 + ROWH + 8 + 64
+    var laying = false
+    /// the font follows the card: the text area's height holds two lines, its width about seven letters per size unit
+    func applyGeometry() {
+        let w = panel.frame.width, h = panel.frame.height
+        let room = max(120, w - 48)
+        let areaH = h - ScreenSub.SH - ScreenSub.KH
+        size = max(12, floor(min(areaH / 2.94, room / 7)))
+        band.ctrlTop = h - ScreenSub.KH
+        band.srcRect = NSRect(x: 24, y: 12, width: room, height: ScreenSub.SH - 12)
+        band.textRect = NSRect(x: 24, y: ScreenSub.SH + max(4, (areaH - 2 * size * 1.22) / 2 - size * 0.08), width: room, height: h)
+        for k in keyViews { k.frame.origin.y = h - ScreenSub.KH + CGFloat(k.row) * ROWH + 4 }
+        band.needsDisplay = true
+    }
     func layout(_ c: SubtitleSettings, _ text: String) {
         let vf = screen.visibleFrame
-        size = max(14, floor(vf.height * CGFloat(c.size) / 100))
-        let room = max(260, floor(vf.width * CGFloat(c.column) / 100))   // v43: the column, centred on the screen
-        let pw = max(room + 48, ROWW[0] + 56)   // the band: the column plus 24 each side; v54: never narrower than the one row of controls
-        let font = NSFont(name: c.bold ? FONT + " Bold" : FONT, size: size) ?? .systemFont(ofSize: size)
-        let wide = (text as NSString).size(withAttributes: [.font: font]).width
-        _ = wide; let lines: CGFloat = 2            // v43: at most four words at a time: the band is two lines high, never jumping
-        let kh: CGFloat = ROWH + 8    // v54: one row of keys under the text
-        let sh = ceil(max(11, size * 0.34) * 1.25 * 2) + 24      // v50: the strip at the top for who is talking: two lines, wraps, never cut
-        let h = ceil(lines * size * 1.22 + size * 0.5 + kh) + sh   // v54: no empty space
+        var w: CGFloat, h: CGFloat
+        if let sz = SubSize.load() { w = sz.width; h = sz.height }
+        else {                                            // the first time: the size the card always had
+            let s0 = max(14, floor(vf.height * CGFloat(c.size) / 100))
+            w = max(max(260, floor(vf.width * CGFloat(c.column) / 100)) + 48, ScreenSub.minW)
+            h = ceil(2 * s0 * 1.22 + s0 * 0.5 + ScreenSub.KH) + ScreenSub.SH
+        }
+        w = min(max(w, ScreenSub.minW), max(ScreenSub.minW, vf.width)); h = min(max(h, ScreenSub.minH), max(ScreenSub.minH, vf.height))
         var y = vf.minY + floor((vf.height - h) / 2)                  // Cocoa's y grows upward
         if c.position == "bottom" { y = vf.minY } else if c.position == "top" { y = vf.maxY - h }
-        var x = vf.minX + floor((vf.width - pw) / 2)
+        var x = vf.minX + floor((vf.width - w) / 2)
         if let cen = SubPos.load() {                                   // v57: the place he dragged it to
-            let r = ScreenSub.clampRect(NSRect(x: cen.x - pw / 2, y: cen.y - h / 2, width: pw, height: h), vf)
+            let r = ScreenSub.clampRect(NSRect(x: cen.x - w / 2, y: cen.y - h / 2, width: w, height: h), vf)
             x = r.minX; y = r.minY
         }
-        panel.setFrame(NSRect(x: x, y: y, width: pw, height: h), display: false)
-        let main = NSScreen.screens.first.map { $0 == screen } ?? false
-        let alpha = (!c.bandmain && main) ? 0 : CGFloat(c.band) / 100
-        _ = alpha; band.ctrlTop = h - kh        // v51: the card is always dark; `band`, `grey`, `bandmain` no longer paint a grey band
-        band.srcRect = NSRect(x: 24, y: 12, width: room, height: sh - 12)
-        
-        band.textRect = NSRect(x: 24, y: sh + max(4, (h - sh - kh - lines * size * 1.22) / 2 - size * 0.08), width: room, height: h)
-        let keys = keyViews
-        for k in keys { k.frame.origin.y = h - kh + CGFloat(k.row) * ROWH + 4 }                  // x: SubtitleEngine.placeKeys
+        laying = true
+        panel.minSize = NSSize(width: ScreenSub.minW, height: ScreenSub.minH)
+        panel.maxSize = NSSize(width: max(ScreenSub.minW, vf.width), height: max(ScreenSub.minH, vf.height))
+        let f = NSRect(x: x, y: y, width: w, height: h)
+        if panel.frame != f { panel.setFrame(f, display: false) }
+        laying = false
+        applyGeometry()
     }
     /// v43: the chunk's lines (1 or 2) put in the middle of the band's text part
     func place(_ chunk: String, _ c: SubtitleSettings) {
@@ -295,7 +328,7 @@ final class ScreenSub {
         let wide = (chunk as NSString).size(withAttributes: [.font: font]).width
         let room = band.textRect.width
         let n = max(1, min(2, ceil(wide / (room * 0.92))))
-        let h = panel.frame.height, kh = ROWH + 8, sh = band.srcRect.height + 12
+        let h = panel.frame.height, kh = ScreenSub.KH, sh = ScreenSub.SH
         band.textRect.origin.y = sh + max(4, (h - sh - kh - n * size * 1.22) / 2 - size * 0.08)
     }
     static func clampY(_ y: CGFloat, _ h: CGFloat, _ vf: NSRect) -> CGFloat { min(max(y, vf.minY), vf.maxY - h) }
@@ -379,6 +412,17 @@ final class SubtitleEngine {
             let bad = self.subs.filter { !on.contains($0.panel.windowNumber) }
             if bad.isEmpty { return }
             subLog("panels not on screen (\(bad.count) of \(self.subs.count)); " + (retry ? "recreating" : "giving up"))
+            if !retry {                               // v58: the second failure: the process itself is stale; start it afresh, at most once in 10 minutes
+                let d = UserDefaults.standard, last = d.double(forKey: "subRelaunchAt"), now = Date().timeIntervalSince1970
+                if now - last > 600 {
+                    d.set(now, forKey: "subRelaunchAt"); d.synchronize()
+                    subLog("relaunching the app (voicectl start)")
+                    let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/sh")
+                    p.arguments = ["-c", "sleep 3; \"$HOME/.local/bin/voicectl\" start"]
+                    try? p.run()
+                    NSApp.terminate(nil)
+                }
+            }
             if retry {
                 self.drop(); self.subs = [ScreenSub(SubPos.homeScreen() ?? NSScreen.screens[0], self)]   // v57: ONE window on ONE screen
                 self.show(self.text, self.words)

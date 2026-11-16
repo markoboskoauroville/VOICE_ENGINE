@@ -300,4 +300,4 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 16.11.2026 (v58): resizable subtitle, only the text scales
 "Please fix the voice engine subtitles so I can actually resize the window itself. And as I am resizing, only thing which is changing size is the text size of the subtitles, rest stay the same."
 
-**Status:** in work 16.11.2026, v58.
+**Status:** built 16.11.2026, v58 (see TAKEOVER).

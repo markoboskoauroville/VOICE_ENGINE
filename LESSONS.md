@@ -84,3 +84,8 @@ Since v24 the blob does not show; pause, previous, next, stop live on the subtit
 
 ## 15.11.2026 (v54): Play was overridden by MicGuard
 MicGuard (voiced.py) re-paused the reading 0.12 s after every Play while Speechify kept the microphone open, so Play looked dead. A hand-pressed Play must win for that reading (skip_gen), like READ ANYWAY. Check ~/.voice/voiced.log for `micguard:` lines first. AX tree (not a screenshot, the windows are not capturable) proves the layout: all `subtitle-*` buttons share one y.
+
+## 16.11.2026 (v58): the subtitle vanished all morning, then resize
+- The long-lived app (started 06:53) had its card panel with kCGWindowIsOnscreen nil; subtitle.log showed `panels not on screen ... recreating / giving up` every ~2 min from 06:20. Same family as v41. Quit + reopen (voicectl start) fixed it. v58 does that by itself on the second failure.
+- The card's height used to be computed from the font; now the font is computed from the card (areaH/2.94, width/7), so the user can resize. Only the font moves; fixed: strip 59, key row 60.
+- Capturing the BenQ is not allowed: prove with the window-server flag + AX frames of the buttons.
