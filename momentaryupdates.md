@@ -310,3 +310,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 ## 16.11.2026: hover card and pipes (Marko, 16.11.2026)
 "Please with all my apps on the menu bar, make a comprehensive pop-up menu. When I hover over, I want to see what is it and what is it doing." and "for my apps always make a pipes before and after so I know where one app ends and other begins."
 **Status:** saved first; building in v60 (HoverCard kit; pipes before the leftmost and after the rightmost item of the group).
+
+## 17.11.2026, v61: Clear queue
+> 62 readings piled up and silenced his replies; he needs one click to empty it.
+
+Status: built by GitHub (see the run). CLEAR QUEUE (N) is a key in the subtitle band's row (Subtitle.swift `clearQueue`, `paintClear`), N from GET /speaking `queue`; a click posts /speak/queue/clear (never /speak/stop), the reading playing is left alone, the key shows "Cleared N" for 2.5 s. ROWW 444 -> 610. The updater (Updater.checkAtStart) has been in since v50. Not yet clicked in the running app.
