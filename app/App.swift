@@ -6,7 +6,7 @@
 // the controls are named for what they do (SUBTITLES, BACKGROUND, MAIN SCREEN); "OFF, ANSWERS NOT READ" is gone (it fed
 // only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
 //
-// v61 (17.11.2026): CLEAR QUEUE (N) key on the subtitle band (Subtitle.swift clearQueue), POST /speak/queue/clear.
+// v62 (17.11.2026): CLEAR QUEUE (N) next to ON/OFF in the main window (Switch.clearQueue, SwitchRow), POST /speak/queue/clear; one place only (the v61 key on the subtitle band is gone).
 // v50 (14.11.2026, Marko: "when it is talking, the message at the top to be written, not read ... where from is this talk coming? ... the session name, so I know who is talking"): the subtitle band (the player: PREVIOUS, PAUSE, NEXT ... STOP) shows (SOURCE) at its top, from GET /speaking `from` (POST /speak `from`, langsay sends the Claude Code session name); never spoken. And it now asks to update at start (Updater.swift).
 // v26 (2.11.2026): the order ▶ ■ SUB. v25: SUB beside ▶ ■ turns the subtitles on/off, off by default. v24: no blob; while she reads ▶ (pause/play) and ■ (stop) stand in the menu bar (MenuControls.swift). v23: a stuck GET /speaking poll is dropped after 3 s, so the blob (✕ stops her) always comes. v22: the notice as wide as its words. v21 (1.11.2026): a held reading says why under the blob, with READ ANYWAY (Blob.swift showHeld); the engine holds
 // only for Voice to Text (Mantra) and Speechify listening to him (MANTRA_VOICE voiced.py MicGuard.LISTENERS).
@@ -25,7 +25,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 61
+let VERSION = 62
 let APP_NAME = "Voice Engine (Mantra)"
 
 struct SubtitleSettings: Codable, Equatable {
@@ -256,11 +256,36 @@ final class Switch: ObservableObject {
         look()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.look() }
     }
+    // v62 (Marko, 17.11.2026: 62 readings piled up): CLEAR QUEUE (N) beside ON / OFF, N = GET /speaking `queue`, polled with look().
+    // A click posts /speak/queue/clear (the reading now playing is left alone) and shows "Cleared N" for 2.5 s.
+    @Published var queueLabel = "Clear queue"
+    private var clearedUntil = Date.distantPast
+    private func call(_ path: String, post: Bool) -> [String: Any]? {
+        var r = URLRequest(url: URL(string: VOICE_URL + path)!, timeoutInterval: 2)
+        if post { r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        var out: [String: Any]?; let sem = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: r) { d, _, _ in out = d.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }; sem.signal() }.resume()
+        _ = sem.wait(timeout: .now() + 2.5)
+        return out
+    }
+    func clearQueue() {
+        q.async {
+            let n = self.call("/speak/queue/clear", post: true)?["cleared"] as? Int
+            DispatchQueue.main.async {
+                self.queueLabel = n.map { "Cleared \($0)" } ?? "Not cleared"
+                self.clearedUntil = Date().addingTimeInterval(2.5)
+            }
+        }
+    }
     func look() {
         q.async {
             var u: [String: Bool] = [:]
             for p in PARTS { u[p.id] = alive(p.pattern) }
-            DispatchQueue.main.async { self.up = u }
+            let n = (u[PARTS[0].id] ?? false) ? (self.call("/speaking", post: false)?["queue"] as? Int ?? 0) : 0
+            DispatchQueue.main.async {
+                self.up = u
+                if Date() >= self.clearedUntil { self.queueLabel = n > 0 ? "Clear queue (\(n))" : "Clear queue" }
+            }
         }
     }
     func start() { busy = "STARTING"; q.async { Switch.startNow(); DispatchQueue.main.async { self.busy = nil; self.look() } } }
@@ -300,6 +325,10 @@ struct SwitchRow: View {
                         .axButton("Voice engine off", id: "engine-off", value: sw.on ? "on" : "off") { if sw.busy == nil && sw.on { sw.stop() } }
                 }
                 Text("VOICE ENGINE").font(.system(size: 15, weight: .bold, design: .monospaced)).foregroundColor(SAND).padding(.leading, 12)
+                Text(sw.queueLabel).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundColor(SAND)
+                    .padding(.horizontal, 10).padding(.vertical, 5).background(Capsule().fill(Color.white.opacity(0.12)))
+                    .padding(.leading, 14).contentShape(Rectangle()).onTapGesture { sw.clearQueue() }
+                    .axButton("Clear queue", id: "clear-queue", value: sw.queueLabel) { sw.clearQueue() }
                 Spacer()
                 TopWord()
                 CloseX()

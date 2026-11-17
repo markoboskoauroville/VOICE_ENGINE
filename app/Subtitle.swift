@@ -17,7 +17,7 @@ import AppKit
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
 let KW: CGFloat = 0              // v43: no keys at the right any more; the group is one centred row under the text (alignment.md)
-let ROWW: [CGFloat] = [610]   // v54: ONE row of nine controls (Marko, 15.11.2026: "Make all buttons in one line")
+let ROWW: [CGFloat] = [444]   // v54: ONE row of nine controls (Marko, 15.11.2026: "Make all buttons in one line")
 let ROWH: CGFloat = 52
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
@@ -118,8 +118,7 @@ final class KeyLabel: NSView {
             img.draw(in: NSRect(x: c.midX - sz.width / 2, y: c.midY - sz.height / 2, width: sz.width, height: sz.height))
             return
         }
-        let pw = max(60, bounds.width - 6)
-        let pill = NSRect(x: (bounds.width - pw) / 2, y: (bounds.height - 30) / 2, width: pw, height: 30)
+        let pill = NSRect(x: (bounds.width - 60) / 2, y: (bounds.height - 30) / 2, width: 60, height: 30)
         NSColor(white: 0.17, alpha: 1).setFill(); NSBezierPath(roundedRect: pill, xRadius: 15, yRadius: 15).fill()
         NSColor(white: 1, alpha: 0.12).setStroke(); let o = NSBezierPath(roundedRect: pill.insetBy(dx: 0.5, dy: 0.5), xRadius: 15, yRadius: 15); o.lineWidth = 1; o.stroke()
         let p = NSMutableParagraphStyle(); p.alignment = .center
@@ -313,14 +312,12 @@ final class ScreenSub {
             ("SLOWER", "minus.circle", 0, 192, 48, { [weak engine] in engine?.nudgeSpeed(-0.1) }),
             ("SPEED", nil, 0, 240, 60, {}),
             ("FASTER", "plus.circle", 0, 300, 48, { [weak engine] in engine?.nudgeSpeed(0.1) }),
-            ("CLEAR", nil, 0, 348, 166, { [weak engine] in engine?.clearQueue() }),   // v61: empties the waiting readings (POST /speak/queue/clear), not the one playing
-            ("HIDE", "captions.bubble.fill", 0, 514, 48, { [weak engine] in engine?.hideByClick() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
-            ("STOP", "stop.fill", 0, 562, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
+            ("HIDE", "captions.bubble.fill", 0, 348, 48, { [weak engine] in engine?.hideByClick() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
+            ("STOP", "stop.fill", 0, 396, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
         for (t, sym, row, x, w, f) in right {
             let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 48), symbol: sym, f)
             k.slot = x; k.row = row
             if t == "SPEED" { k.display = "1.0x" }
-            if t == "CLEAR" { k.display = "Clear queue" }
             band.addSubview(k)
         }
     }
@@ -688,26 +685,6 @@ final class SubtitleEngine {
         paintSpeed()
         postJSON("/speak/rate", "{\"rate\": \(speed)}")
     }
-    // v61 (Marko, 17.11.2026: 62 readings piled up and silenced his replies): CLEAR QUEUE (N) beside the player keys; N = GET /speaking
-    // `queue`. A click posts /speak/queue/clear (the reading now playing is left alone) and shows "Cleared N" for 2.5 s.
-    var queueN = 0, clearedUntil = Date.distantPast, clearedText = ""
-    func paintClear() {
-        let t = Date() < clearedUntil ? clearedText : (queueN > 0 ? "Clear queue (\(queueN))" : "Clear queue")
-        for s in subs { for k in s.keyViews where k.text == "CLEAR" && k.display != t { k.display = t; k.needsDisplay = true } }
-    }
-    func clearQueue() {
-        var r = URLRequest(url: URL(string: VOICE_URL + "/speak/queue/clear")!)
-        r.httpMethod = "POST"; r.httpBody = Data("{}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        r.timeoutInterval = 3
-        URLSession.shared.dataTask(with: r) { d, _, _ in
-            let n = (d.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })?["cleared"] as? Int
-            DispatchQueue.main.async {
-                self.clearedText = n.map { "Cleared \($0)" } ?? "Not cleared"; self.clearedUntil = Date().addingTimeInterval(2.5)
-                self.queueN = 0; self.paintClear()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { self.paintClear() }
-            }
-        }.resume()
-    }
     func paintSpeed() {
         for s in subs { for k in s.keyViews where k.text == "SPEED" { k.display = String(format: "%.1fx", speed); k.needsDisplay = true } }
     }
@@ -717,7 +694,6 @@ final class SubtitleEngine {
     func heard(_ st: Speaking) {
         if pause.sync(st.paused ?? false) { paintPause() }
         if let sp = st.speed, abs(sp - speed) > 0.01 { speed = sp; paintSpeed() }
-        queueN = st.queue ?? 0; paintClear()
         for s in subs { s.band.live = st.on && !(st.paused ?? false) }
         if st.on, let f = st.from { for s in subs { s.band.source = f } }     // v50: who is talking, kept while the last sentence lingers
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)

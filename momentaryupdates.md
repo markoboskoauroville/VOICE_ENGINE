@@ -315,3 +315,8 @@ v46 window was taller than the screen: the top (switch, SPEAKS ON) was cut off. 
 > 62 readings piled up and silenced his replies; he needs one click to empty it.
 
 Status: built by GitHub (see the run). CLEAR QUEUE (N) is a key in the subtitle band's row (Subtitle.swift `clearQueue`, `paintClear`), N from GET /speaking `queue`; a click posts /speak/queue/clear (never /speak/stop), the reading playing is left alone, the key shows "Cleared N" for 2.5 s. ROWW 444 -> 610. The updater (Updater.checkAtStart) has been in since v50. Not yet clicked in the running app.
+
+## 17.11.2026, v62: Clear queue moved to the main window
+> Not on the subtitle band (it only shows while a reading plays); in the main window next to the on/off switch, always visible.
+
+Status: v61's band key removed (Subtitle.swift back to v60). `Switch.queueLabel` / `clearQueue()` / `look()` (App.swift) poll GET /speaking `queue` each second and post /speak/queue/clear; the pill sits in SwitchRow after VOICE ENGINE, AX id `clear-queue`. Shows "Cleared N" 2.5 s, "Not cleared" without an answer. Not yet clicked in the running app.
