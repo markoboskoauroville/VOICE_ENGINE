@@ -17,8 +17,12 @@ import AppKit
 let VOICE_URL = "http://127.0.0.1:8837"
 let FONT = "Helvetica Neue"
 let KW: CGFloat = 0              // v43: no keys at the right any more; the group is one centred row under the text (alignment.md)
-let ROWW: [CGFloat] = [444]   // v54: ONE row of nine controls (Marko, 15.11.2026: "Make all buttons in one line")
+let ROWW: [CGFloat] = [484]   // v54: ONE row of nine controls (Marko, 15.11.2026: "Make all buttons in one line")
 let ROWH: CGFloat = 52
+// v63 (Marko, 17.11.2026): the number of readings waiting, "(N)", at the end of the row of keys, in the main window and on the band.
+// ONE source: GET /speaking `queue`, written by whichever poll hears it (Switch.look, SubtitleEngine.heard); both places draw queueText().
+var QUEUE_N = 0
+func queueText() -> String { "(\(QUEUE_N))" }
 let LW: CGFloat = 24             // v29: no keys on the left any more (− + gone, Marko: "font size is good")
 let LEAD = 0.05                  // MA Reader's WORD_LEAD: a word lit a breath early reads as on time
 let HIDE_NOTE = "community.auroville.subtitle.hide"     // the answer box says: the subtitle closes
@@ -116,6 +120,12 @@ final class KeyLabel: NSView {
             let img = base.withSymbolConfiguration(cfg) ?? base
             let sz = img.size
             img.draw(in: NSRect(x: c.midX - sz.width / 2, y: c.midY - sz.height / 2, width: sz.width, height: sz.height))
+            return
+        }
+        if text == "COUNT" {      // plain text, no pill: it is a number, not a key
+            let p = NSMutableParagraphStyle(); p.alignment = .center
+            let font = NSFont.monospacedSystemFont(ofSize: 15, weight: .bold)
+            (display ?? text).draw(in: NSRect(x: 0, y: bounds.midY - font.boundingRectForFont.height / 2, width: bounds.width, height: font.boundingRectForFont.height), withAttributes: [.font: font, .foregroundColor: white, .paragraphStyle: p])
             return
         }
         let pill = NSRect(x: (bounds.width - 60) / 2, y: (bounds.height - 30) / 2, width: 60, height: 30)
@@ -313,11 +323,13 @@ final class ScreenSub {
             ("SPEED", nil, 0, 240, 60, {}),
             ("FASTER", "plus.circle", 0, 300, 48, { [weak engine] in engine?.nudgeSpeed(0.1) }),
             ("HIDE", "captions.bubble.fill", 0, 348, 48, { [weak engine] in engine?.hideByClick() }),   // v43: HIDE only hides; /speak/close ended the reading (found by the click test)
-            ("STOP", "stop.fill", 0, 396, 48, { [weak engine] in engine?.hide(); stopAndExit() })]
+            ("STOP", "stop.fill", 0, 396, 48, { [weak engine] in engine?.hide(); stopAndExit() }),
+            ("COUNT", nil, 0, 444, 40, {})]      // v63: a count, not a button
         for (t, sym, row, x, w, f) in right {
             let k = KeyLabel(t, sym == nil ? 24 : 26, NSRect(x: x, y: 0, width: w, height: 48), symbol: sym, f)
             k.slot = x; k.row = row
             if t == "SPEED" { k.display = "1.0x" }
+            if t == "COUNT" { k.display = queueText() }
             band.addSubview(k)
         }
     }
@@ -694,6 +706,8 @@ final class SubtitleEngine {
     func heard(_ st: Speaking) {
         if pause.sync(st.paused ?? false) { paintPause() }
         if let sp = st.speed, abs(sp - speed) > 0.01 { speed = sp; paintSpeed() }
+        QUEUE_N = st.queue ?? 0
+        for s in subs { for k in s.keyViews where k.text == "COUNT" && k.display != queueText() { k.display = queueText(); k.needsDisplay = true } }
         for s in subs { s.band.live = st.on && !(st.paused ?? false) }
         if st.on, let f = st.from { for s in subs { s.band.source = f } }     // v50: who is talking, kept while the last sentence lingers
         MenuControls.shared.heard(st)       // v24: ▶ ■ in the menu bar instead of the blob (Marko 2.11.2026)

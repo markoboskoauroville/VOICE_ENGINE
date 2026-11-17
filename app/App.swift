@@ -6,6 +6,7 @@
 // the controls are named for what they do (SUBTITLES, BACKGROUND, MAIN SCREEN); "OFF, ANSWERS NOT READ" is gone (it fed
 // only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
 //
+// v63 (17.11.2026): the count "(N)" of waiting readings at the end of the main window's first row and of the band's keys (QUEUE_N / queueText() in Subtitle.swift, one source).
 // v62 (17.11.2026): CLEAR QUEUE (N) next to ON/OFF in the main window (Switch.clearQueue, SwitchRow), POST /speak/queue/clear; one place only (the v61 key on the subtitle band is gone).
 // v50 (14.11.2026, Marko: "when it is talking, the message at the top to be written, not read ... where from is this talk coming? ... the session name, so I know who is talking"): the subtitle band (the player: PREVIOUS, PAUSE, NEXT ... STOP) shows (SOURCE) at its top, from GET /speaking `from` (POST /speak `from`, langsay sends the Claude Code session name); never spoken. And it now asks to update at start (Updater.swift).
 // v26 (2.11.2026): the order ▶ ■ SUB. v25: SUB beside ▶ ■ turns the subtitles on/off, off by default. v24: no blob; while she reads ▶ (pause/play) and ■ (stop) stand in the menu bar (MenuControls.swift). v23: a stuck GET /speaking poll is dropped after 3 s, so the blob (✕ stops her) always comes. v22: the notice as wide as its words. v21 (1.11.2026): a held reading says why under the blob, with READ ANYWAY (Blob.swift showHeld); the engine holds
@@ -25,7 +26,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 62
+let VERSION = 63
 let APP_NAME = "Voice Engine (Mantra)"
 
 struct SubtitleSettings: Codable, Equatable {
@@ -259,6 +260,7 @@ final class Switch: ObservableObject {
     // v62 (Marko, 17.11.2026: 62 readings piled up): CLEAR QUEUE (N) beside ON / OFF, N = GET /speaking `queue`, polled with look().
     // A click posts /speak/queue/clear (the reading now playing is left alone) and shows "Cleared N" for 2.5 s.
     @Published var queueLabel = "Clear queue"
+    @Published var queueCount = "(0)"
     private var clearedUntil = Date.distantPast
     private func call(_ path: String, post: Bool) -> [String: Any]? {
         var r = URLRequest(url: URL(string: VOICE_URL + path)!, timeoutInterval: 2)
@@ -284,6 +286,7 @@ final class Switch: ObservableObject {
             let n = (u[PARTS[0].id] ?? false) ? (self.call("/speaking", post: false)?["queue"] as? Int ?? 0) : 0
             DispatchQueue.main.async {
                 self.up = u
+                QUEUE_N = n; self.queueCount = queueText()
                 if Date() >= self.clearedUntil { self.queueLabel = n > 0 ? "Clear queue (\(n))" : "Clear queue" }
             }
         }
@@ -332,6 +335,7 @@ struct SwitchRow: View {
                 Spacer()
                 TopWord()
                 CloseX()
+                Text(sw.queueCount).font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(SAND).padding(.leading, 6)
             } }
             if parts { ForEach(PARTS) { p in
                 let u = sw.up[p.id] ?? false
