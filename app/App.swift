@@ -7,6 +7,7 @@
 // only the Stop hook subtitle_answer.py, taken out on 31.10.2026). Before v20 this app was Claude to Marko Voice.
 //
 // v63 (17.11.2026): the count "(N)" of waiting readings at the end of the main window's first row and of the band's keys (QUEUE_N / queueText() in Subtitle.swift, one source).
+// v64 (21.11.2026, Marko: "put the voice engine switch on off. And then all session speaks or all sessions are quiet. Very simple. I am missing the button at the top"): ONE button at the very top, VOICE ENGINE ON (green) / VOICE ENGINE OFF (grey), AX button `voice-engine-switch`. It reads and writes ~/.mantra/voice_engine_state ("on" / "off", missing = on), the file langsay, phonesay and MANTRA_VOICE POST /speak obey; it follows `voiceengine on|off` from a terminal within a second; switching off also stops the reading and empties the queue. The app being open or closed changes nothing, the file rules. The old ON / OFF row (the server process) stays, its label is now SERVER.
 // v62 (17.11.2026): CLEAR QUEUE (N) next to ON/OFF in the main window (Switch.clearQueue, SwitchRow), POST /speak/queue/clear; one place only (the v61 key on the subtitle band is gone).
 // v50 (14.11.2026, Marko: "when it is talking, the message at the top to be written, not read ... where from is this talk coming? ... the session name, so I know who is talking"): the subtitle band (the player: PREVIOUS, PAUSE, NEXT ... STOP) shows (SOURCE) at its top, from GET /speaking `from` (POST /speak `from`, langsay sends the Claude Code session name); never spoken. And it now asks to update at start (Updater.swift).
 // v26 (2.11.2026): the order ▶ ■ SUB. v25: SUB beside ▶ ■ turns the subtitles on/off, off by default. v24: no blob; while she reads ▶ (pause/play) and ■ (stop) stand in the menu bar (MenuControls.swift). v23: a stuck GET /speaking poll is dropped after 3 s, so the blob (✕ stops her) always comes. v22: the notice as wide as its words. v21 (1.11.2026): a held reading says why under the blob, with READ ANYWAY (Blob.swift showHeld); the engine holds
@@ -26,7 +27,7 @@ import AppKit
 // other window (NSWindow.level .floating), kept in UserDefaults "onTop" and applied when the window opens; TOP and ✕
 // are Accessibility buttons `top`, `close`. ON / OFF themselves are left as they were. Answer Claude (Mantra) got its
 // own first row: ON OFF · ANSWER CLAUDE · TOP ✕ (reply/main.swift).
-let VERSION = 63
+let VERSION = 64
 let APP_NAME = "Voice Engine (Mantra)"
 
 struct SubtitleSettings: Codable, Equatable {
@@ -217,7 +218,7 @@ final class Engine: ObservableObject {
         engine = e; if let v = v { voice = v }            // the window answers at once; refresh() confirms
         post("/current", b)
     }
-    func hear() { post("/speak", ["text": "Marko, this is how I sound now.", "here": true]) }
+    func hear() { post("/speak", ["text": "Marko, this is how I sound now.", "here": true, "user": true]) }
 }
 
 // THE SWITCH (v20, from Voice of Claude v6, 8.10.2026: "make [a Swift app] ... in which I can easily turn on and off the
@@ -311,6 +312,48 @@ final class Switch: ObservableObject {
     }
 }
 
+// v64: THE GLOBAL SWITCH. The state is the file ~/.mantra/voice_engine_state, nothing else; this object only mirrors it.
+final class GlobalVoice: ObservableObject {
+    static let path = HOME + "/.mantra/voice_engine_state"
+    @Published var on = true
+    private var timer: Timer?
+    init() {
+        read()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.read() }
+    }
+    static func fileOn() -> Bool {
+        ((try? String(contentsOfFile: path, encoding: .utf8)) ?? "on").trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "off"
+    }
+    func read() { let v = GlobalVoice.fileOn(); if v != on { on = v } }
+    func toggle() {
+        let v = !on
+        try? FileManager.default.createDirectory(atPath: HOME + "/.mantra", withIntermediateDirectories: true)
+        try? ((v ? "on" : "off") + "\n").write(toFile: GlobalVoice.path, atomically: true, encoding: .utf8)
+        on = v
+        if !v {    // what plays now stops at once and the queue is emptied
+            var r = URLRequest(url: URL(string: VOICE_URL + "/speak/stop")!, timeoutInterval: 2)
+            r.httpMethod = "POST"; r.httpBody = Data("{\"clear\": true}".utf8); r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            URLSession.shared.dataTask(with: r) { _, _, _ in }.resume()
+        }
+    }
+}
+
+struct GlobalSwitchButton: View {
+    @ObservedObject var g: GlobalVoice
+    var body: some View {
+        let label = g.on ? "VOICE ENGINE ON" : "VOICE ENGINE OFF"
+        Text(label)
+            .font(.system(size: 22, weight: .bold, design: .monospaced))
+            .lineLimit(1).minimumScaleFactor(0.6)
+            .foregroundColor(g.on ? INK : GREY)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background(RoundedRectangle(cornerRadius: 12).fill(g.on ? GREEN : Color.white.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(g.on ? GREEN : GREY.opacity(0.5), lineWidth: 1))
+            .contentShape(Rectangle()).onTapGesture { g.toggle() }
+            .axButton(label, id: "voice-engine-switch", value: g.on ? "on" : "off") { g.toggle() }
+    }
+}
+
 // The first row (v20): ON OFF · VOICE ENGINE · TOP ✕, then the three parts. ON / OFF start and stop the engine itself.
 struct SwitchRow: View {
     @ObservedObject var sw: Switch
@@ -327,7 +370,7 @@ struct SwitchRow: View {
                     Word(text: "OFF", on: !sw.on) { if sw.on { sw.stop() } }
                         .axButton("Voice engine off", id: "engine-off", value: sw.on ? "on" : "off") { if sw.busy == nil && sw.on { sw.stop() } }
                 }
-                Text("VOICE ENGINE").font(.system(size: 15, weight: .bold, design: .monospaced)).foregroundColor(SAND).padding(.leading, 12)
+                Text("SERVER").font(.system(size: 15, weight: .bold, design: .monospaced)).foregroundColor(SAND).padding(.leading, 12)
                 Text(sw.queueLabel).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundColor(SAND)
                     .padding(.horizontal, 10).padding(.vertical, 5).background(Capsule().fill(Color.white.opacity(0.12)))
                     .padding(.leading, 14).contentShape(Rectangle()).onTapGesture { sw.clearQueue() }
@@ -503,6 +546,7 @@ struct Settings: View {
     @StateObject var engine = Engine()
     @StateObject var sw = Switch()
     @StateObject var outputs = Outputs()
+    @StateObject var gv = GlobalVoice()
     @AppStorage("tab") var tab = "ENGINE"
     var body: some View {
         // v47 (14.11.2026): the rows scroll inside a window no taller than the screen; v46's SPEAKS ON made the content taller
@@ -516,6 +560,7 @@ struct Settings: View {
     // first row stays; under it one tab at a time, the last one remembered (UserDefaults "tab"). Tabs are AX buttons tab-<name>.
     var content: some View {
         VStack(alignment: .leading, spacing: 18) {
+            GlobalSwitchButton(g: gv)
             SwitchRow(sw: sw, parts: false)
             HStack(spacing: 4) {
                 ForEach(TABS, id: \.self) { t in

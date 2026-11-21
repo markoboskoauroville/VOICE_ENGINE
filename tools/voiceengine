@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""voiceengine: the ONE global switch, VOICE ENGINE ON / OFF (Marko, 21.11.2026: "all session speaks or all sessions are quiet").
+
+    voiceengine on | off | toggle | status [--json]
+
+The state is the file ~/.mantra/voice_engine_state, one word, `on` or `off`; missing = on. The window of Voice Engine (Mantra)
+(its button at the top) reads and writes the same file, whether the app runs or not. Off: langsay, phonesay and MANTRA_VOICE
+POST /speak (unless the caller sends "user": true, an app reading aloud on Marko's own click) answer at once and play nothing;
+speech to text (/hear) is not touched. Switching off also stops the reading that plays now and empties the queue.
+"""
+import json, os, sys, urllib.request
+
+FILE = os.path.expanduser("~/.mantra/voice_engine_state")
+
+
+def state():
+    try:
+        return "off" if open(FILE).read().strip().lower() == "off" else "on"
+    except OSError:
+        return "on"
+
+
+def set_state(v):
+    os.makedirs(os.path.dirname(FILE), exist_ok=True)
+    tmp = FILE + ".tmp"
+    open(tmp, "w").write(v + "\n")
+    os.replace(tmp, FILE)
+    if v == "off":                       # what plays now stops at once; best effort, the engine may be down
+        try:
+            req = urllib.request.Request("http://127.0.0.1:8837/speak/stop", data=b'{"clear": true}',
+                                         headers={"Content-Type": "application/json"}, method="POST")
+            urllib.request.urlopen(req, timeout=2).read()
+        except Exception:
+            pass
+
+
+def main():
+    a = sys.argv[1:]
+    cmd = a[0] if a else "status"
+    if cmd == "toggle":
+        cmd = "off" if state() == "on" else "on"
+    if cmd in ("on", "off"):
+        set_state(cmd)
+    elif cmd != "status":
+        sys.exit(__doc__)
+    s = state()
+    if "--json" in a:
+        print(json.dumps({"voice_engine": s, "file": FILE}))
+    else:
+        print("VOICE ENGINE " + s.upper())
+
+
+if __name__ == "__main__":
+    main()
