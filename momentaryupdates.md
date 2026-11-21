@@ -325,3 +325,8 @@ Status: v61's band key removed (Subtitle.swift back to v60). `Switch.queueLabel`
 > Show the number of messages in the queue in parentheses at the end of the row of buttons, in both places.
 
 Status: `QUEUE_N` / `queueText()` (Subtitle.swift) is the one source, written by `Switch.look` (main window, a Text after the ✕) and `SubtitleEngine.heard` (band key COUNT after STOP, drawn as plain text, 40 pt, ROWW 444 -> 484). Always shown, "(0)" when empty. Clear queue stays only in the main window. Not yet seen in the running app.
+
+## 21.11.2026: one global VOICE ENGINE ON / OFF switch (Marko, 21.11.2026)
+> "We need to create this simple rule for voice engine. There is voice engine app Swift app here. And put the voice engine switch on off. And then all session speaks or all sessions are quiet. Very simple. I am missing the button at the top which is very easy to understand. Voice engine on off."
+
+**Status:** saved first; building in v64 (state file ~/.mantra/voice_engine_state, gate in langsay and MANTRA_VOICE, command `voiceengine`, button at the top of the window).
